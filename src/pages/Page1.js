@@ -1,15 +1,23 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 
 function Page1() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    // ===== 추후 백엔드 연동 시 사용할 코드 =====
-    // axios.post('http://localhost:8080/api/logout');
-    // localStorage.removeItem('token');
-    // =========================================
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'http://localhost:8000/api/logout/',
+        {},
+        { headers: { Authorization: `Token ${token}` } }  // 토큰 인증 헤더
+      );
+    } catch (error) {
+      console.error('로그아웃 요청 실패', error);
+    }
+    localStorage.removeItem('token');
     logout();
     navigate('/login');
   };

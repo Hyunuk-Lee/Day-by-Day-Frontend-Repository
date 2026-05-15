@@ -1,0 +1,102 @@
+/* ===== global.css — 디자인 토큰 + 전역 스타일 통합 ===== */
+
+:root {
+  /* ===== Color Palette: Deep & Calm Blue ===== */
+  --color-primary: #1E40AF;
+  --color-primary-hover: #1E3A8A;
+  --color-primary-light: #3B82F6;
+  --color-accent: #7DD3FC;
+  --color-accent-soft: #BAE6FD;
+
+  --color-bg: #F8FAFC;
+  --color-bg-deep: #EFF4FB;
+  --color-surface: rgba(255, 255, 255, 0.72);
+  --color-surface-border: rgba(255, 255, 255, 0.55);
+
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
+
+  --color-input-border: #CBD5E1;
+  --color-input-bg: rgba(255, 255, 255, 0.6);
+
+  /* ===== Soft Shadows ===== */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(30, 64, 175, 0.06),
+               0 2px 4px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 20px 50px -12px rgba(30, 64, 175, 0.18),
+               0 8px 20px -8px rgba(15, 23, 42, 0.08),
+               0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  --shadow-glow: 0 0 0 4px rgba(125, 211, 252, 0.25),
+                 0 4px 14px rgba(30, 64, 175, 0.12);
+  --shadow-button: 0 4px 14px rgba(30, 64, 175, 0.35),
+                   0 1px 2px rgba(30, 64, 175, 0.2);
+  --shadow-button-hover: 0 8px 22px rgba(30, 64, 175, 0.42),
+                         0 2px 4px rgba(30, 64, 175, 0.25);
+
+  /* ===== Rounded Corners ===== */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* ===== Typography ===== */
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont,
+               'Apple SD Gothic Neo', 'Segoe UI', sans-serif;
+  --font-serif: 'Noto Serif KR', Georgia, serif;
+
+  /* ===== Transitions ===== */
+  --transition-base: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+  background: var(--color-bg);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%,
+                    rgba(125, 211, 252, 0.28) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 50% at 85% 90%,
+                    rgba(59, 130, 246, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 50% 50%,
+                    rgba(186, 230, 253, 0.18) 0%, transparent 60%),
+    linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-deep) 100%);
+  animation: drift 20s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-2%, 1%) scale(1.05); }
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image:
+    radial-gradient(circle at 1px 1px,
+                    rgba(30, 64, 175, 0.04) 1px,
+                    transparent 0);
+  background-size: 24px 24px;
+}

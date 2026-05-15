@@ -5,7 +5,18 @@ function Page2() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'http://localhost:8000/api/logout/',
+        {},
+        { headers: { Authorization: `Token ${token}` } }  // 토큰 인증 헤더
+      );
+    } catch (error) {
+      console.error('로그아웃 요청 실패', error);
+    }
+    localStorage.removeItem('token');
     logout();
     navigate('/login');
   };

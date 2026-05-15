@@ -1,0 +1,16 @@
+/* Register.module.css */
+.icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg,
+              var(--color-primary-light),
+              var(--color-primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: white;
+  box-shadow: var(--shadow-md);
+}
