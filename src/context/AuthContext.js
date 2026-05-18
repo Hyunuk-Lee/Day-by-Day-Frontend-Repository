@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
     setUser({ username });
   };
 
-  const logout = () => {
+  const logout = () => { 
     setUser(null);
   };
 
