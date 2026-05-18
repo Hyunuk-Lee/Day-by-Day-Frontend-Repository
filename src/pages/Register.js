@@ -1,38 +1,51 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import axios from 'axios';  // 백엔드 연동 시 주석 해제
-import shared from '../styles/auth-shared.module.css';
-import styles from './Login.module.css';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios"; // 백엔드 연동 시 주석 해제
+import shared from "../styles/auth-shared.module.css";
+import styles from "./Login.module.css";
 
 function Register() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const navigate = useNavigate();
   const { login } = useAuth();
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (password !== passwordConfirm) {
-    alert('비밀번호가 일치하지 않습니다.');
-    return;
-  }
+    if (password !== passwordConfirm) {
+      alert("비밀번호가 일치하지 않습니다.");
+      return;
+    }
 
-  try {
-    const response = await axios.post('http://localhost:8000/api/register/', {
-      username,
-      password,
-    });
-    localStorage.setItem('token', response.data.token);
-    login(response.data.username);
-    alert('회원가입 성공!');
-    navigate('/');
-  } catch (error) {
-    alert('회원가입 실패: ' + (error.response?.data?.message || '서버 오류'));
-  }
-};
+    if (!username || !password) {
+      alert("아이디와 비밀번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/auth/register/",
+        {
+          username,
+          password,
+        },
+      );
+
+      // 성공: 토큰과 사용자 정보를 context에 저장
+      const { token, username: responseUsername, id } = response.data;
+      login(responseUsername, id, token);
+
+      alert("회원가입 성공!");
+      navigate("/");
+    } catch (error) {
+      const message =
+        error.response?.data?.message || "회원가입 실패. 다시 시도해주세요.";
+      alert(message);
+    }
+  };
 
   return (
     <div className={shared.page}>
@@ -79,12 +92,13 @@ const handleSubmit = async (e) => {
 
         <p className={shared.footer}>
           이미 계정이 있으신가요?
-          <Link to="/login" className={shared.link}>로그인</Link>
+          <Link to="/login" className={shared.link}>
+            로그인
+          </Link>
         </p>
       </div>
     </div>
   );
-
 }
 
 export default Register;

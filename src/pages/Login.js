@@ -1,24 +1,44 @@
 // Login.js
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import shared from '../styles/auth-shared.module.css';
-import styles from './Login.module.css';
-import axios from 'axios'
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import shared from "../styles/auth-shared.module.css";
+import styles from "./Login.module.css";
+import axios from "axios";
 
 function Login() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (username && password) {
-      login(username);
-      navigate('/');
-    } else {
-      alert('아이디와 비밀번호를 입력해주세요.');
+    if (!username || !password) {
+      alert("아이디와 비밀번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/auth/login/",
+        {
+          username,
+          password,
+        },
+      );
+
+      // 성공: 토큰과 사용자 정보를 context에 저장
+      const { token, username: responseUsername, id } = response.data;
+      login(responseUsername, id, token);
+
+      navigate("/");
+    } catch (error) {
+      // 실패: 에러 메시지 표시
+      const message =
+        error.response?.data?.message ||
+        "로그인 실패. 아이디와 비밀번호를 확인해주세요.";
+      alert(message);
     }
   };
 
@@ -57,7 +77,9 @@ function Login() {
 
         <p className={shared.footer}>
           계정이 없으신가요?
-          <Link to="/register" className={shared.link}>회원가입</Link>
+          <Link to="/register" className={shared.link}>
+            회원가입
+          </Link>
         </p>
       </div>
     </div>
