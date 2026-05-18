@@ -1,0 +1,660 @@
+/* ===== WriteDiary.module.css ===== */
+
+/* ───── 페이지 컨테이너 ───── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+/* ═══════════════════════════════════════
+   Step 1: 일기 작성 폼
+   ═══════════════════════════════════════ */
+.writeStep {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  animation: fadeSlideUp 0.5s ease;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── 상단 헤더 ─── */
+.writeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+}
+
+.backBtn:hover {
+  color: var(--color-primary);
+  background: rgba(30, 64, 175, 0.06);
+}
+
+.writeDate {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+}
+
+.headerSpacer {
+  width: 90px; /* backBtn과 대칭 맞추기 용 */
+}
+
+/* ─── 날씨 선택 ─── */
+.weatherSection {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: var(--shadow-sm);
+  padding: 20px 24px;
+}
+
+.weatherLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+
+.weatherOptions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.weatherBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1.5px solid var(--color-surface-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-family: inherit;
+}
+
+.weatherBtn:hover {
+  border-color: var(--color-accent);
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
+}
+
+.weatherActive {
+  border-color: var(--color-primary);
+  background: rgba(30, 64, 175, 0.08);
+  box-shadow: var(--shadow-glow);
+}
+
+.weatherEmoji {
+  font-size: 22px;
+}
+
+.weatherText {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* ─── 일기 본문 ─── */
+.contentSection {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-xl);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-lg);
+  padding: 32px;
+  position: relative;
+}
+
+/* 다이어리 책등 느낌 — auth-shared와 동일 */
+.contentSection::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  bottom: 24px;
+  left: 12px;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--color-accent) 20%,
+    var(--color-primary) 50%,
+    var(--color-accent) 80%,
+    transparent 100%
+  );
+  opacity: 0.35;
+  border-radius: 2px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 0 0 0 20px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+}
+
+.textarea::placeholder {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.charCount {
+  text-align: right;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 12px;
+  padding-right: 4px;
+}
+
+/* ─── 이미지 첨부 ─── */
+.imageSection {
+  display: flex;
+  justify-content: center;
+}
+
+.imageUploadBtn {
+  background: var(--color-surface);
+  border: 1.5px dashed var(--color-input-border);
+  border-radius: var(--radius-md);
+  padding: 14px 28px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  width: 100%;
+}
+
+.imageUploadBtn:hover {
+  border-color: var(--color-accent);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--color-primary);
+}
+
+.imagePreviewWrapper {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.imagePreview {
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius-lg);
+}
+
+.imageRemoveBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-base);
+}
+
+.imageRemoveBtn:hover {
+  background: rgba(220, 38, 38, 0.8);
+}
+
+/* ─── 기록 마무리하기 버튼 ─── */
+.submitBtn {
+  width: 100%;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-light) 100%
+  );
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-button);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.submitBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.6s ease;
+}
+
+.submitBtn:hover {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-hover) 0%,
+    var(--color-primary) 100%
+  );
+  box-shadow: var(--shadow-button-hover);
+  transform: translateY(-2px);
+}
+
+.submitBtn:hover::before {
+  left: 100%;
+}
+
+.submitBtn:active {
+  transform: translateY(0);
+}
+
+.submitDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submitDisabled:hover {
+  transform: none;
+  box-shadow: var(--shadow-button);
+}
+
+.submitDisabled::before {
+  display: none;
+}
+
+/* ═══════════════════════════════════════
+   Step 2: 마무리 트랜지션
+   ═══════════════════════════════════════ */
+.transitionStep {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 200;
+  background: linear-gradient(
+    135deg,
+    var(--color-bg) 0%,
+    var(--color-bg-deep) 100%
+  );
+  animation: fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.transitionContent {
+  text-align: center;
+  animation: transitionPulse 2s ease-in-out infinite;
+}
+
+@keyframes transitionPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+.transitionIcon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  animation: floatUp 2.5s ease-in-out infinite;
+}
+
+@keyframes floatUp {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.transitionText {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.transitionHint {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ═══════════════════════════════════════
+   Step 3: AI 분석 로딩
+   ═══════════════════════════════════════ */
+.analyzingStep {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  background: linear-gradient(
+    135deg,
+    var(--color-bg) 0%,
+    var(--color-bg-deep) 100%
+  );
+  animation: fadeIn 0.5s ease;
+}
+
+.analyzingContent {
+  text-align: center;
+  max-width: 480px;
+  padding: 0 24px;
+}
+
+/* 스피너 */
+.analyzingSpinner {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 28px;
+  border-radius: 50%;
+  border: 3px solid var(--color-accent-soft);
+  border-top-color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.analyzingText {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+.analyzingSubtext {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 40px;
+}
+
+/* 스켈레톤 카드 */
+.skeletonCards {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.skeletonCard {
+  width: 140px;
+  padding: 20px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.skeletonIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--color-bg-deep) 25%, var(--color-bg) 50%, var(--color-bg-deep) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonLine {
+  width: 80%;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--color-bg-deep) 25%, var(--color-bg) 50%, var(--color-bg-deep) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonLineShort {
+  width: 55%;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--color-bg-deep) 25%, var(--color-bg) 50%, var(--color-bg-deep) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  animation-delay: 0.2s;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════
+   Step 4: 추천 결과
+   ═══════════════════════════════════════ */
+.resultStep {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  animation: fadeSlideUp 0.6s ease;
+}
+
+.resultHeader {
+  text-align: center;
+  padding-top: 20px;
+}
+
+.resultTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.resultSubtitle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+/* 추천 카드 */
+.resultCards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.resultCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: var(--shadow-md);
+  padding: 24px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  animation: cardSlideIn 0.5s ease both;
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.resultCard:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.resultCardIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-accent-soft), var(--color-accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.resultCardBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.resultCardCategory {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.resultCardTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.resultCardDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* 하단 액션 버튼 */
+.resultActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.resultPrimaryBtn {
+  width: 100%;
+  padding: 15px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-light) 100%
+  );
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-button);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.resultPrimaryBtn:hover {
+  box-shadow: var(--shadow-button-hover);
+  transform: translateY(-2px);
+}
+
+.resultSecondaryBtn {
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.resultSecondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-primary);
+  border-color: var(--color-accent);
+}

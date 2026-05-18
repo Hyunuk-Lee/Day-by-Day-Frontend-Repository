@@ -253,7 +253,7 @@ function Mainpage() {
 
   const handleStartDiary = () => {
     // TODO: 일기 작성 페이지/모달로 이동
-    alert('일기 작성 페이지는 아직 구현 중입니다.');
+    navigate('/diary/write');
   };
 
   useEffect(() => {

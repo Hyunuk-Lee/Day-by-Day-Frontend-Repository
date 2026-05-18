@@ -6,6 +6,7 @@ import Recommended from './pages/Recommended';
 import Mypage from './pages/Mypage';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import WriteDiary from './pages/WriteDiary';
 import './App.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path='/Mypage' element={<Mypage />} />
+          <Route path="/diary/write" element={<WriteDiary />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
