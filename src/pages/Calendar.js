@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 
-function Page2() {
+function Calendar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -23,17 +24,17 @@ function Page2() {
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
-      <h1>페이지 2</h1>
+      <h1>캘린더 페이지</h1>
       {user ? (
         <p>안녕하세요, <strong>{user.username}</strong>님!</p>
       ) : (
         <p>로그인이 필요합니다.</p>
       )}
-      <button onClick={() => navigate('/')} style={{ margin: '8px' }}>페이지 1로 이동</button>
-      <button onClick={() => navigate('/page3')} style={{ margin: '8px' }}>페이지 3으로 이동</button>
+      <button onClick={() => navigate('/')} style={{ margin: '8px' }}>메인페이지로 이동</button>
+      <button onClick={() => navigate('/recommended')} style={{ margin: '8px' }}>추천 페이지로 이동</button>
       {user && <button onClick={handleLogout} style={{ margin: '8px' }}>로그아웃</button>}
     </div>
   );
 }
 
-export default Page2;
+export default Calendar;
