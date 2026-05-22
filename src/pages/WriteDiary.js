@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import styles from './WriteDiary.module.css';
+import axios from 'axios';
 
-// ─── 날씨 옵션 ───
 const WEATHER_OPTIONS = [
   { value: 'sunny', emoji: '☀️', label: '맑음' },
   { value: 'cloudy', emoji: '⛅', label: '흐림' },
@@ -12,6 +12,18 @@ const WEATHER_OPTIONS = [
   { value: 'windy', emoji: '💨', label: '바람' },
   { value: 'stormy', emoji: '⛈', label: '천둥' },
 ];
+
+// ─── 날씨 옵션 ───
+const WEATHER_MAP = {
+  sunny: 'SUNNY',
+  cloudy: 'CLOUDY',
+  rainy: 'RAINY',
+  snowy: 'SNOWY',
+  windy: 'WINDY',
+  stormy: 'THUNDER',  // 주의: stormy → THUNDER
+};
+
+const API_BASE = 'http://127.0.0.1:8000';
 
 // ─── 유틸: 오늘 날짜 포맷 ───
 function getFormattedDate() {
@@ -305,9 +317,7 @@ function WriteDiary() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // step: 'write' → 'transition' → 'analyzing' → 'result'
   const [step, setStep] = useState('write');
-
   const [diary, setDiary] = useState({
     content: '',
     weather: '',
@@ -315,41 +325,75 @@ function WriteDiary() {
     imagePreview: null,
   });
 
-  // 비로그인 시 로그인 페이지로
+  // 저장된 일기 ID와 분석 결과를 state로 보관
+  const [diaryId, setDiaryId] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState(null);
+
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
+    if (!user) navigate('/login');
   }, [user, navigate]);
 
-  // ─── Step 전환 핸들러 ───
-  const handleFinishWrite = () => {
-    // TODO: 백엔드에 일기 저장 API 호출
-    // const token = localStorage.getItem('token');
-    // const formData = new FormData();
-    // formData.append('content', diary.content);
-    // formData.append('weather', diary.weather);
-    // if (diary.image) formData.append('image', diary.image);
-    // await axios.post('http://localhost:8000/api/diaries/', formData, {
-    //   headers: { Authorization: `Token ${token}`, 'Content-Type': 'multipart/form-data' }
-    // });
+  // ─── Step 1 → Step 2: 일기를 백엔드에 저장 ───
+  const handleFinishWrite = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // FormData로 multipart/form-data 요청 만들기
+      const formData = new FormData();
+      formData.append('content', diary.content);
+      if (diary.weather) {
+        formData.append('weather', WEATHER_MAP[diary.weather]);
+      }
+      if (diary.image) {
+        formData.append('image', diary.image);
+      }
 
-    setStep('transition');
+      const res = await axios.post(
+        `${API_BASE}/api/diary/create/`,
+        formData,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      // 저장된 일기의 ID를 보관 (다음 단계에서 감정 분석할 때 사용)
+      setDiaryId(res.data.id);
+      console.log('일기 저장 성공:', res.data);  // 개발용 로그
+
+      setStep('transition');
+    } catch (error) {
+      console.error('일기 저장 실패:', error);
+      alert('일기 저장에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
-  const handleTransitionEnd = () => {
-    // TODO: 백엔드에 AI 감정 분석 요청
-    // const token = localStorage.getItem('token');
-    // const res = await axios.post('http://localhost:8000/api/analyze/', { diary_id }, {
-    //   headers: { Authorization: `Token ${token}` }
-    // });
-    // setAnalysisResult(res.data);
+  // ─── Step 2 → Step 3: 감정 분석 요청 ───
+  const handleTransitionEnd = async () => {
+    setStep('analyzing');  // 먼저 로딩 화면으로 전환
 
-    setStep('analyzing');
+    try {
+      const token = localStorage.getItem('token');
+      
+      const res = await axios.post(
+        `${API_BASE}/api/diary/send/`,
+        { diary_id: diaryId },
+        {
+          headers: { Authorization: `Token ${token}` },
+        }
+      );
+
+      setAnalysisResult(res.data);
+      console.log('감정 분석 결과:', res.data);  // 개발용 로그
+    } catch (error) {
+      console.error('감정 분석 실패:', error);
+      alert('감정 분석에 실패했습니다.');
+    }
   };
 
   const handleAnalysisEnd = () => {
-    // TODO: 분석 완료 후 추천 결과 세팅
     setStep('result');
   };
 
@@ -378,6 +422,7 @@ function WriteDiary() {
       {step === 'result' && (
         <ResultStep
           diary={diary}
+          analysisResult={analysisResult}  // 나중에 결과 화면에 활용
           onGoHome={handleGoHome}
           onGoRecommended={handleGoRecommended}
         />

@@ -1,0 +1,40 @@
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+
+function MyPage() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'http://localhost:8000/api/logout/',
+        {},
+        { headers: { Authorization: `Token ${token}` } }  // 토큰 인증 헤더
+      );
+    } catch (error) {
+      console.error('로그아웃 요청 실패', error);
+    }
+    localStorage.removeItem('token');
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <div style={{ padding: '40px', textAlign: 'center' }}>
+      <h1>마이 페이지</h1>
+      {user ? (
+        <p>안녕하세요, <strong>{user.username}</strong>님!</p>
+      ) : (
+        <p>로그인이 필요합니다.</p>
+      )}
+      <button onClick={() => navigate('/')} style={{ margin: '8px' }}>메인페이지로 이동</button>
+      <button onClick={() => navigate('/recommended')} style={{ margin: '8px' }}>추천 페이지로 이동</button>
+      {user && <button onClick={handleLogout} style={{ margin: '8px' }}>로그아웃</button>}
+    </div>
+  );
+}
+
+export default MyPage;

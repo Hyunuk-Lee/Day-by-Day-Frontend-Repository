@@ -24,7 +24,7 @@ function Recommended() {
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
-      <h1>캘린더 페이지</h1>
+      <h1>추천 보관함 페이지</h1>
       {user ? (
         <p>안녕하세요, <strong>{user.username}</strong>님!</p>
       ) : (
