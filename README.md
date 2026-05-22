@@ -4,3 +4,11 @@
 git add .
 git commit -m "커밋 내용"
 git push --force origin main
+
+백엔드 서버 킬 때
+python -m venv myenv (맨 처음만)
+myenv\Scripts\activate
+하고 
+python manage.py migrate
+python manage.py makemigration
+python manage.py runserver
