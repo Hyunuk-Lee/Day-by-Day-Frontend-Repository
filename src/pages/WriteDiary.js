@@ -23,7 +23,7 @@ const WEATHER_MAP = {
   stormy: 'THUNDER',  // 주의: stormy → THUNDER
 };
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = '';
 
 // ─── 유틸: 오늘 날짜 포맷 ───
 function getFormattedDate() {

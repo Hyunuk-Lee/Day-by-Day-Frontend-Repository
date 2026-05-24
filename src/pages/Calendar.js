@@ -77,7 +77,7 @@ function Calendar() {
     //   try {
     //     const token = localStorage.getItem('token');
     //     const response = await axios.get(
-    //       `http://localhost:8000/api/diaries/emotions/?year=${year}&month=${month + 1}`,
+    //       `/api/diaries/emotions/?year=${year}&month=${month + 1}`,
     //       { headers: { Authorization: `Token ${token}` } }
     //     );
     //     // 예상 응답 형식: [{ date: '2026-05-01', primary_emotion: '기쁨' }, ...]
@@ -195,7 +195,7 @@ function Calendar() {
     try {
       // const token = localStorage.getItem('token');
       // await axios.post(
-      //   'http://localhost:8000/api/logout/',
+      //   '/api/logout/',
       //   {},
       //   { headers: { Authorization: `Token ${token}` } }
       // );
@@ -280,7 +280,7 @@ function Calendar() {
               </button>
             )}
             {isCurrentMonthView && !hasTodayDiary && (
-              <button className={styles.writeCta} onClick={() => navigate('/')}>
+              <button className={styles.writeCta} onClick={() => navigate('/diary/write')}>
                 ✍️  오늘의 일기 쓰기
               </button>
             )}

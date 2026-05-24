@@ -10,7 +10,7 @@ function Login() {
   const handleSubmit = async ({ username, password }) => {
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/login/",
+        "/api/auth/login/",
         {
           username,
           password,

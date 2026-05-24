@@ -10,7 +10,7 @@ function Register() {
   const handleSubmit = async ({ username, password }) => {
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/register/",
+        "/api/auth/register/",
         {
           username,
           password,

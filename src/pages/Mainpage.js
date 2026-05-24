@@ -239,7 +239,7 @@ function Mainpage() {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        'http://localhost:8000/api/logout/',
+        '/api/logout/',
         {},
         { headers: { Authorization: `Token ${token}` } }
       );
