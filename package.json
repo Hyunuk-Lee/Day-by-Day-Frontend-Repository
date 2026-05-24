@@ -2,6 +2,7 @@
   "name": "daybyday",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://54.180.152.247:8000",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",

@@ -1,11 +1,15 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AuthForm from "./AuthForm";
 import axios from "axios";
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+
+  // ProtectedRoute에서 넘어온 경우 원래 가려던 경로, 아니면 메인으로
+  const from = location.state?.from?.pathname || "/";
 
   const handleSubmit = async ({ username, password }) => {
     try {
@@ -20,7 +24,7 @@ function Login() {
       const { token, username: responseUsername, id } = response.data;
       login(responseUsername, id, token);
 
-      navigate("/");
+      navigate(from, { replace: true });
     } catch (error) {
       const message =
         error.response?.data?.message ||

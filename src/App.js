@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 import Mainpage from './pages/Mainpage';
 import Calendar from './pages/Calendar';
 import Recommended from './pages/Recommended';
@@ -14,13 +16,65 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Mainpage />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/recommended" element={<Recommended />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path='/Mypage' element={<Mypage />} />
-          <Route path="/diary/write" element={<WriteDiary />} />
+          {/* 비로그인 전용 */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            }
+          />
+
+          {/* 로그인 필수 */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Mainpage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute>
+                <Calendar />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recommended"
+            element={
+              <ProtectedRoute>
+                <Recommended />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/Mypage"
+            element={
+              <ProtectedRoute>
+                <Mypage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/diary/write"
+            element={
+              <ProtectedRoute>
+                <WriteDiary />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
