@@ -48,6 +48,7 @@ function getWeekDates() {
 // ═══════════════════════════════════════
 //  컴포넌트: 상단 네비게이션 바
 // ═══════════════════════════════════════
+
 function TopNav({ user, onLogout, onNavigate }) {
   return (
     <nav className={styles.topnav}>
@@ -57,7 +58,6 @@ function TopNav({ user, onLogout, onNavigate }) {
       <div className={styles.topnavRight}>
         <button className={styles.topnavLink} onClick={() => onNavigate('/calendar')}>캘린더</button>
         <button className={styles.topnavLink} onClick={() => onNavigate('/recommended')}>추천 보관함</button>
-        <button className={styles.topnavLink} onClick={() => onNavigate('/Mypage')}>마이페이지</button>
         {user ? (
           <button className={`${styles.topnavLink} ${styles.topnavLogout}`} onClick={onLogout}>로그아웃</button>
         ) : (

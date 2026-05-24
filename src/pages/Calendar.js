@@ -223,7 +223,7 @@ function Calendar() {
         </div>
         <div className={styles.topnavRight}>
           <button className={styles.topnavLink} onClick={() => navigate('/')}>홈</button>
-          <button className={styles.topnavLink} onClick={() => navigate('/recommended')}>추천</button>
+          <button className={styles.topnavLink} onClick={() => navigate('/recommended')}>추천 보관함</button>
           {user && (
             <button className={`${styles.topnavLink} ${styles.topnavLogout}`} onClick={handleLogout}>
               로그아웃
