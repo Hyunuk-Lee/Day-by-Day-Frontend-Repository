@@ -15,3 +15,9 @@ python manage.py makemigration
 python manage.py runserver
 
 백엔드 서버: http://54.180.152.247:8000/
+
+장고 백엔드 관리자 계정
+
+id: admin
+
+password: opensw8
