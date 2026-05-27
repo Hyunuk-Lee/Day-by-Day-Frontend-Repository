@@ -5,7 +5,7 @@ import styles from './WriteDiary.module.css';
 import axios from 'axios';
 
 // ─── 백엔드 베이스 URL (AWS 배포) ───
-const API_BASE = 'http://54.180.152.247:8000';
+const API_BASE = process.env.REACT_APP_API_URL || '';
 
 // ─── 날씨 옵션 ───
 const WEATHER_OPTIONS = [
