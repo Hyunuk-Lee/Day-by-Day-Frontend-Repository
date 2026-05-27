@@ -9,7 +9,7 @@ import styles from './Calendar.module.css';
  * 운영 환경에서는 .env에 REACT_APP_API_URL을 설정해 덮어쓰기 권장
  * (예: REACT_APP_API_URL=http://54.180.152.247:8000)
  * ==================================================== */
-const API_BASE = process.env.REACT_APP_API_URL || 'http://54.180.152.247:8000';
+const API_BASE = process.env.REACT_APP_API_URL || '';
 
 /* ====================================================
  * 감정 → 이모지 / 색상 / 한글 라벨 매핑
