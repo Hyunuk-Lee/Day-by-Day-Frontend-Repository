@@ -4,6 +4,39 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import styles from './Mainpage.module.css';
 
+// ─── API Base (.env에서 주입, 배포 시 빈 문자열 → Netlify 프록시) ───
+const API_BASE = process.env.REACT_APP_API_URL || '';
+
+// ─── 감정 → 이모지 / 색상 / 한글 라벨 매핑 (캘린더와 동일) ───
+const EMOTION_META = {
+  joy:      { emoji: '😊', label: '기쁨',   color: '#FBBF77' }, // 따뜻한 머스타드
+  sadness:  { emoji: '😢', label: '슬픔',   color: '#6FA8DC' }, // 차분한 세룰리안
+  anger:    { emoji: '😠', label: '분노',   color: '#E89090' }, // 옅은 코랄
+  fear:     { emoji: '😨', label: '두려움', color: '#B5A8D9' }, // 라벤더 그레이
+  trust:    { emoji: '🙂', label: '신뢰',   color: '#9BC4A5' }, // 세이지 그린
+  surprise: { emoji: '😲', label: '놀람',   color: '#F5C7B8' }, // 살구 핑크
+};
+
+// 한글 primary_emotion → 영문 키 (emotion_key 누락 시 fallback)
+const KOR_TO_KEY = {
+  '기쁨': 'joy',
+  '슬픔': 'sadness',
+  '분노': 'anger',
+  '두려움': 'fear',
+  '신뢰': 'trust',
+  '놀람': 'surprise',
+  '알수없음': 'unknown',
+};
+
+// ─── 날씨 코드 → 이모지 (캘린더와 동일) ───
+const WEATHER_EMOJI = {
+  SUNNY: '☀️',
+  CLOUDY: '☁️',
+  RAINY: '🌧️',
+  SNOWY: '❄️',
+  THUNDER: '⛈️',
+};
+
 // ─── 유틸: 시간대별 인사말 & 이모지 ───
 function getGreeting() {
   const hour = new Date().getHours();
@@ -24,6 +57,14 @@ function getFormattedDate() {
   return `${year}. ${month}. ${date}. ${day}요일`;
 }
 
+// ─── 유틸: 로컬 기준 YYYY-MM-DD 키 생성 (UTC 변환 오류 방지) ───
+function toDateKey(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const date = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+}
+
 // ─── 유틸: 이번 주 날짜 배열 (월~일) ───
 function getWeekDates() {
   const now = new Date();
@@ -41,14 +82,19 @@ function getWeekDates() {
       d.getMonth() === now.getMonth() &&
       d.getDate() === now.getDate();
     const isPast = d < new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return { label, date: d.getDate(), isToday, isPast };
+    return {
+      label,
+      date: d.getDate(),
+      dateKey: toDateKey(d), // 'YYYY-MM-DD' — moodData 조회 키
+      isToday,
+      isPast,
+    };
   });
 }
 
 // ═══════════════════════════════════════
 //  컴포넌트: 상단 네비게이션 바
 // ═══════════════════════════════════════
-
 function TopNav({ user, onLogout, onNavigate }) {
   return (
     <nav className={styles.topnav}>
@@ -95,20 +141,27 @@ function HeroSection({ user, onStartDiary }) {
 
 // ═══════════════════════════════════════
 //  컴포넌트: 이번 주 마음 흐름
+//  moodData: { 'YYYY-MM-DD': { emotion_key, emoji, label, color, weather, preview } }
 // ═══════════════════════════════════════
-function WeeklyMood({ weekDates, moodData }) {
+function WeeklyMood({ weekDates, moodData, isLoading }) {
+  // 날짜별 표시 방식 결정
   const getMoodStyle = (dateInfo) => {
-    if (!dateInfo.isPast && !dateInfo.isToday) {
-      return { type: 'none' };
+    const entry = moodData[dateInfo.dateKey];
+
+    // 1) 일기가 있는 날 → 감정 이모지 블롭
+    if (entry) {
+      return { type: 'emotion', ...entry };
     }
+    // 2) 오늘인데 아직 기록 없음 → 점선 원 (작성 유도)
     if (dateInfo.isToday) {
-      return { type: 'empty', color: '#ccc' };
+      return { type: 'empty' };
     }
-    // 더미 데이터 — 백엔드 연동 시 moodData로 교체
-    const colors = ['#7EB8DA', '#F4A261', '#90BE6D', '#C77DFF', '#F28482'];
-    const types = ['full', 'full', 'half', 'full', 'full'];
-    const idx = dateInfo.date % colors.length;
-    return { type: types[idx], color: colors[idx] };
+    // 3) 지나간 날인데 기록 없음 → 옅은 빈 원
+    if (dateInfo.isPast) {
+      return { type: 'missing' };
+    }
+    // 4) 아직 오지 않은 미래 → 작은 점
+    return { type: 'none' };
   };
 
   return (
@@ -118,30 +171,49 @@ function WeeklyMood({ weekDates, moodData }) {
         이번 주 마음 흐름
         <span className={styles.sectionLine} />
       </h2>
-      <div className={styles.moodRow}>
+
+      <div className={`${styles.moodRow} ${isLoading ? styles.moodLoading : ''}`}>
         {weekDates.map((d, i) => {
           const mood = getMoodStyle(d);
+          const weatherEmoji = mood.weather ? WEATHER_EMOJI[mood.weather] : null;
           return (
-            <div key={i} className={`${styles.moodItem} ${d.isToday ? styles.moodToday : ''}`}>
+            <div
+              key={i}
+              className={`${styles.moodItem} ${d.isToday ? styles.moodToday : ''}`}
+            >
               <span className={styles.moodLabel}>{d.label}</span>
               <div className={styles.moodDotWrapper}>
-                {mood.type === 'full' && (
+                {mood.type === 'emotion' && (
                   <span
-                    className={`${styles.moodDot} ${styles.moodFull}`}
+                    className={styles.moodEmotion}
                     style={{ backgroundColor: mood.color }}
-                  />
-                )}
-                {mood.type === 'half' && (
-                  <span
-                    className={`${styles.moodDot} ${styles.moodHalf}`}
-                    style={{ borderColor: mood.color, backgroundColor: `${mood.color}55` }}
-                  />
+                  >
+                    <span className={styles.moodEmoji}>{mood.emoji}</span>
+                  </span>
                 )}
                 {mood.type === 'empty' && (
                   <span className={`${styles.moodDot} ${styles.moodEmpty}`} />
                 )}
+                {mood.type === 'missing' && (
+                  <span className={`${styles.moodDot} ${styles.moodMissing}`} />
+                )}
                 {mood.type === 'none' && (
                   <span className={`${styles.moodDot} ${styles.moodNone}`} />
+                )}
+
+                {/* 일기가 있는 날 → 호버 시 감정 + 미리보기 툴팁 (캘린더와 동일) */}
+                {mood.type === 'emotion' && (
+                  <span className={styles.tooltip}>
+                    <span className={styles.tooltipHeader}>
+                      {weatherEmoji && <span>{weatherEmoji}</span>}
+                      <span>{mood.label}</span>
+                    </span>
+                    {mood.preview && (
+                      <span className={styles.tooltipPreview}>
+                        {mood.preview}
+                      </span>
+                    )}
+                  </span>
                 )}
               </div>
             </div>
@@ -230,7 +302,8 @@ function Mainpage() {
 
   const [recommendedItems, setRecommendedItems] = useState([]);
   const [recentDiaries, setRecentDiaries] = useState([]);
-  const [moodData, setMoodData] = useState({});
+  const [moodData, setMoodData] = useState({});       // { 'YYYY-MM-DD': { emotion_key, label, color } }
+  const [moodLoading, setMoodLoading] = useState(false);
 
   const weekDates = getWeekDates();
 
@@ -238,7 +311,7 @@ function Mainpage() {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        '/api/logout/',
+        `${API_BASE}/api/logout/`,
         {},
         { headers: { Authorization: `Token ${token}` } }
       );
@@ -255,9 +328,95 @@ function Mainpage() {
     navigate('/diary/write');
   };
 
+  // ─────────────────────────────────────
+  //  이번 주 마음 흐름: 캘린더 API 재사용
+  //  GET /api/diary/calendar/?year=&month=
+  //  이번 주가 두 달에 걸치면 두 달 모두 조회 후 병합
+  // ─────────────────────────────────────
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchWeeklyMood = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return; // 비로그인 시 더미/빈 상태 유지
+
+      setMoodLoading(true);
+
+      try {
+        // 이번 주에 걸친 (year, month) 조합을 중복 없이 수집
+        const monthKeys = new Map(); // 'YYYY-M' → { year, month }
+        weekDates.forEach((d) => {
+          const [y, m] = d.dateKey.split('-');
+          const key = `${parseInt(y, 10)}-${parseInt(m, 10)}`;
+          if (!monthKeys.has(key)) {
+            monthKeys.set(key, { year: parseInt(y, 10), month: parseInt(m, 10) });
+          }
+        });
+
+        // 각 달을 병렬 조회
+        const requests = Array.from(monthKeys.values()).map(({ year, month }) =>
+          axios.get(`${API_BASE}/api/diary/calendar/`, {
+            params: { year, month }, // dateKey에서 이미 1-indexed로 추출됨
+            headers: { Authorization: `Token ${token}` },
+            signal: controller.signal,
+          })
+        );
+
+        const responses = await Promise.all(requests);
+
+        // 이번 주 날짜 집합 (빠른 조회용)
+        const weekKeySet = new Set(weekDates.map((d) => d.dateKey));
+
+        // 응답들을 병합하면서 이번 주 날짜만 추출
+        const merged = {};
+        responses.forEach((res) => {
+          const { has_diaries, calendar_data } = res.data;
+          if (!has_diaries || !calendar_data) return;
+
+          Object.entries(calendar_data).forEach(([dateKey, entry]) => {
+            if (!weekKeySet.has(dateKey)) return; // 이번 주 밖 날짜는 버림
+
+            const emotionKey =
+              entry.emotion_key ||
+              KOR_TO_KEY[entry.primary_emotion] ||
+              'unknown';
+            const meta = EMOTION_META[emotionKey];
+            if (!meta) return; // unknown 등 매핑 없는 감정은 표시 안 함
+
+            merged[dateKey] = {
+              emotion_key: emotionKey,
+              emoji: meta.emoji,
+              label: meta.label,
+              color: meta.color,
+              weather: entry.weather || null,
+              preview: entry.preview || '',
+            };
+          });
+        });
+
+        setMoodData(merged);
+      } catch (err) {
+        if (axios.isCancel(err) || err.name === 'CanceledError') return;
+        console.error('이번 주 마음 흐름 로딩 실패', err);
+        // 실패 시 빈 상태로 둠 (UI는 '기록 없음'으로 표시)
+        setMoodData({});
+      } finally {
+        setMoodLoading(false);
+      }
+    };
+
+    fetchWeeklyMood();
+
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 마운트 시 1회 (이번 주는 고정)
+
+  // ─────────────────────────────────────
+  //  추천 콘텐츠 / 최근 일기 (추후 연동)
+  // ─────────────────────────────────────
   useEffect(() => {
     // TODO: 백엔드 연동 시 아래 주석 해제
-    // fetchRecommended(); fetchDiaries(); fetchMood();
+    // fetchRecommended(); fetchDiaries();
   }, []);
 
   return (
@@ -266,7 +425,7 @@ function Mainpage() {
 
       <main className={styles.mainContent}>
         <HeroSection user={user} onStartDiary={handleStartDiary} />
-        <WeeklyMood weekDates={weekDates} moodData={moodData} />
+        <WeeklyMood weekDates={weekDates} moodData={moodData} isLoading={moodLoading} />
         <RecommendedPreview items={recommendedItems} onNavigate={navigate} />
         <RecentDiaries diaries={recentDiaries} onNavigate={navigate} />
       </main>

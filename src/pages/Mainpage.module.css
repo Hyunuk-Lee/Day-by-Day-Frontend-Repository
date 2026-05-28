@@ -255,6 +255,12 @@
   align-items: center;
   gap: 10px;
   flex: 1;
+  position: relative;
+}
+
+/* 호버 시 해당 아이템을 위로 올려 툴팁이 옆 칸에 가리지 않도록 */
+.moodItem:hover {
+  z-index: 50;
 }
 
 .moodToday .moodLabel {
@@ -270,11 +276,12 @@
 }
 
 .moodDotWrapper {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .moodDot {
@@ -284,25 +291,153 @@
   transition: all var(--transition-spring);
 }
 
-.moodFull {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+/* 일기 있는 날 — 감정 이모지 블롭 (캘린더와 통일) */
+.moodEmotion {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 손그림 느낌의 살짝 비대칭 모양 */
+  border-radius: 48% 52% 52% 48% / 50% 48% 52% 50%;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1),
+              inset 0 -2px 4px rgba(0, 0, 0, 0.04),
+              inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  transition: all var(--transition-spring);
+  animation: blobFloat 6s ease-in-out infinite;
 }
 
-.moodHalf {
-  background: transparent;
-  border: 2.5px solid currentColor;
+.moodEmoji {
+  font-size: 17px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.08));
 }
 
+.moodItem:hover .moodEmotion {
+  transform: scale(1.12) rotate(-4deg);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16),
+              inset 0 -2px 4px rgba(0, 0, 0, 0.04),
+              inset 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* 요일마다 살짝 다른 애니메이션 타이밍 */
+.moodItem:nth-child(1) .moodEmotion { animation-delay: 0s; }
+.moodItem:nth-child(2) .moodEmotion { animation-delay: 0.4s; }
+.moodItem:nth-child(3) .moodEmotion { animation-delay: 0.8s; }
+.moodItem:nth-child(4) .moodEmotion { animation-delay: 1.2s; }
+.moodItem:nth-child(5) .moodEmotion { animation-delay: 1.6s; }
+.moodItem:nth-child(6) .moodEmotion { animation-delay: 2.0s; }
+.moodItem:nth-child(7) .moodEmotion { animation-delay: 2.4s; }
+
+@keyframes blobFloat {
+  0%, 100% {
+    border-radius: 48% 52% 52% 48% / 50% 48% 52% 50%;
+    transform: translateY(0);
+  }
+  50% {
+    border-radius: 52% 48% 48% 52% / 48% 52% 48% 52%;
+    transform: translateY(-1.5px);
+  }
+}
+
+/* 오늘(미작성) — 점선 원 */
 .moodEmpty {
   background: transparent;
-  border: 2px dashed var(--color-input-border);
+  border: 2px dashed var(--color-primary);
+  opacity: 0.6;
 }
 
+/* 지나간 날인데 기록 없음 — 옅은 테두리 원 */
+.moodMissing {
+  background: transparent;
+  border: 2px solid var(--color-input-border);
+  opacity: 0.7;
+}
+
+/* 아직 오지 않은 미래 — 작은 점 */
 .moodNone {
   width: 6px;
   height: 6px;
   background: var(--color-input-border);
   opacity: 0.4;
+}
+
+/* 로딩 중 — 살짝 흐려지며 은은한 펄스 */
+.moodLoading {
+  opacity: 0.5;
+  animation: moodPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes moodPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+/* ───── 호버 툴팁 (감정 + 날씨 + 미리보기, 캘린더와 동일) ───── */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+  max-width: 220px;
+  background: rgba(15, 23, 42, 0.95);
+  color: #ffffff;
+  font-size: 11px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--transition-base);
+  z-index: 60;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+  text-align: left;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid rgba(15, 23, 42, 0.95);
+}
+
+.moodItem:hover .tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.tooltipHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #ffffff;
+}
+
+.tooltipPreview {
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+  font-weight: 400;
+  /* 2줄 ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 /* ═══════════════════════════════════════
@@ -498,4 +633,19 @@
   font-size: 13px;
   color: var(--color-text-muted);
   letter-spacing: 0.02em;
+}
+
+/* ───── 모션 감도 대응 ───── */
+@media (prefers-reduced-motion: reduce) {
+  .heroCard,
+  .moodDot,
+  .moodEmotion,
+  .moodLoading {
+    animation: none;
+    transition: none;
+  }
+
+  .moodItem:hover .moodEmotion {
+    transform: none;
+  }
 }
