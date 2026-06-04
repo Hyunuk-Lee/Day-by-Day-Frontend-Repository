@@ -1,11 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../api/client';                  // ← 공유 axios 인스턴스
 import styles from './Mainpage.module.css';
-
-// ─── 백엔드 베이스 URL (AWS 배포) ───
-const API_BASE = 'http://54.180.152.247:8000';
 
 // ─── 유틸: 시간대별 인사말 ───
 function getGreeting() {
@@ -16,7 +13,6 @@ function getGreeting() {
   return { text: '늦은 밤이에요', emoji: '🌙' };
 }
 
-// ─── 유틸: 날짜 포맷 ───
 function getFormattedDate() {
   const now = new Date();
   const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -35,7 +31,6 @@ function formatShortDate(isoString) {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-// ─── 유틸: 이번 주 날짜 배열 (월~일) ───
 function getWeekDates() {
   const now = new Date();
   const dayOfWeek = now.getDay();
@@ -63,7 +58,6 @@ function getWeekDates() {
   });
 }
 
-// ─── 유틸: 한글 감정 → 이모지 / 색상 ───
 const EMOTION_META = {
   '기쁨': { emoji: '😊', color: '#FCD34D' },
   '슬픔': { emoji: '😢', color: '#93C5FD' },
@@ -77,21 +71,15 @@ function getEmotionMeta(primaryEmotion) {
   return EMOTION_META[primaryEmotion] || { emoji: '🌙', color: '#CBD5E1' };
 }
 
-// ─── 유틸: 날씨 enum → 이모지 ───
 const WEATHER_EMOJI = {
-  SUNNY: '☀️',
-  CLOUDY: '⛅',
-  RAINY: '🌧',
-  SNOWY: '❄️',
-  WINDY: '💨',
-  THUNDER: '⛈',
+  SUNNY: '☀️', CLOUDY: '⛅', RAINY: '🌧',
+  SNOWY: '❄️', WINDY: '💨', THUNDER: '⛈',
 };
 
 function getWeatherEmoji(weather) {
   return WEATHER_EMOJI[weather] || '';
 }
 
-// ─── 유틸: 영화 tags 파싱 ───
 function parseMovieTags(tags) {
   if (!tags || tags.length === 0) return [];
   const first = tags[0];
@@ -130,9 +118,7 @@ function TopNav({ user, onLogout, onNavigate }) {
 }
 
 // ═══════════════════════════════════════
-//  컴포넌트: 히어로 섹션
-//  - 공감 멘트 있음 → 감정 이모지 + Serif 인용문
-//  - 공감 멘트 없음 → 기존 단순 카피
+//  컴포넌트: 히어로 섹션 (공감 멘트 우선)
 // ═══════════════════════════════════════
 function HeroSection({ user, todayDiary, empathy, onStartDiary, onViewToday }) {
   const greeting = getGreeting();
@@ -149,9 +135,7 @@ function HeroSection({ user, todayDiary, empathy, onStartDiary, onViewToday }) {
       </h1>
 
       <div className={styles.heroCard}>
-        {/* ─── 메시지 영역 ─── */}
         {hasEmpathy ? (
-          // 공감 멘트 (감정 블롭 + Serif 인용문)
           <div className={styles.empathyBlock}>
             <div
               className={styles.empathyEmoji}
@@ -164,13 +148,11 @@ function HeroSection({ user, todayDiary, empathy, onStartDiary, onViewToday }) {
             </p>
           </div>
         ) : (
-          // 기존 카피 fallback
           <p className={styles.heroCardText}>
             {hasToday ? '오늘의 기록을 마치셨어요 ✨' : '오늘은 어떤 하루였나요?'}
           </p>
         )}
 
-        {/* ─── CTA 버튼 ─── */}
         {hasToday ? (
           <button className={styles.heroCta} onClick={onViewToday}>
             📖 오늘의 추천 다시 보기
@@ -424,13 +406,10 @@ function Mainpage() {
     if (!user) return;
     setIsLoading(true);
 
-    const token = localStorage.getItem('token');
-    const authHeader = { headers: { Authorization: `Token ${token}` } };
-
     const requests = weekDates.map((d) => {
       const dateStr = formatDateForAPI(d.fullDate);
-      return axios
-        .get(`${API_BASE}/api/diary/${dateStr}/`, authHeader)
+      return api
+        .get(`/api/diary/${dateStr}/`)
         .then((res) => ({ date: dateStr, data: res.data }))
         .catch((err) => {
           if (err.response?.status !== 404) {
@@ -459,13 +438,9 @@ function Mainpage() {
   const fetchEmpathy = useCallback(async () => {
     if (!user) return;
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API_BASE}/api/diary/empathy/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
+      const res = await api.get('/api/diary/empathy/');
       setEmpathy(res.data);
     } catch (err) {
-      // 실패 시 조용히 fallback (기본 카피로 표시됨)
       if (err.response?.status !== 401) {
         console.warn('[diary/empathy] 조회 실패:', err.message);
       }
@@ -481,12 +456,7 @@ function Mainpage() {
   // ─── 로그아웃 ───
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${API_BASE}/api/logout/`,
-        {},
-        { headers: { Authorization: `Token ${token}` } }
-      );
+      await api.post('/api/logout/', {});
     } catch (error) {
       console.error('로그아웃 요청 실패', error);
     }
@@ -532,7 +502,7 @@ function Mainpage() {
           onStartDiary={handleStartDiary}
         />
 
-        <RecentDiaries diaries={recentDiaries} onNavigate={navigate} /> 
+        <RecentDiaries diaries={recentDiaries} onNavigate={navigate} />
       </main>
 
       <footer className={styles.mainFooter}>

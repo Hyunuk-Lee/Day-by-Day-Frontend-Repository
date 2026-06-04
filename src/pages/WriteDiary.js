@@ -1,13 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/client';                  // ← 공유 axios 인스턴스
 import styles from './WriteDiary.module.css';
-import axios from 'axios';
 
-// ─── 백엔드 베이스 URL (AWS 배포) ───
-const API_BASE = process.env.REACT_APP_API_URL || '';
-
-// ─── 날씨 옵션 ───
 const WEATHER_OPTIONS = [
   { value: 'sunny', emoji: '☀️', label: '맑음' },
   { value: 'cloudy', emoji: '⛅', label: '흐림' },
@@ -18,51 +14,34 @@ const WEATHER_OPTIONS = [
 ];
 
 const WEATHER_MAP = {
-  sunny: 'SUNNY',
-  cloudy: 'CLOUDY',
-  rainy: 'RAINY',
-  snowy: 'SNOWY',
-  windy: 'WINDY',
-  stormy: 'THUNDER',
+  sunny: 'SUNNY', cloudy: 'CLOUDY', rainy: 'RAINY',
+  snowy: 'SNOWY', windy: 'WINDY', stormy: 'THUNDER',
 };
 
-// ─── 추천 모드 옵션 ───
 const MODE_OPTIONS = [
   {
-    value: 'maintain',
-    label: '유지',
-    emoji: '🌿',
+    value: 'maintain', label: '유지', emoji: '🌿',
     title: '지금의 감정 유지하기',
     description: '현재 감정 상태를 차분하게 유지할 수 있는 콘텐츠를 추천해요.',
   },
   {
-    value: 'shift',
-    label: '전환',
-    emoji: '🌈',
+    value: 'shift', label: '전환', emoji: '🌈',
     title: '다른 감정으로 전환하기',
     description: '우울하거나 화날 때, 긍정적이고 편안한 감정으로 바꿔줄 콘텐츠를 추천해요.',
   },
   {
-    value: 'amplification',
-    label: '극대화',
-    emoji: '🔥',
+    value: 'amplification', label: '극대화', emoji: '🔥',
     title: '지금 감정을 극대화하기',
     description: '행복하고 즐거운 감정을 더 끌어올려줄 흥미진진한 콘텐츠를 추천해요.',
   },
 ];
 
-// ─── 유틸: 오늘 날짜 포맷 ───
 function getFormattedDate() {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const date = now.getDate();
   const days = ['일', '월', '화', '수', '목', '금', '토'];
-  const day = days[now.getDay()];
-  return `${year}. ${month}. ${date}. ${day}요일`;
+  return `${now.getFullYear()}. ${now.getMonth() + 1}. ${now.getDate()}. ${days[now.getDay()]}요일`;
 }
 
-// ─── 유틸: 격려 메시지 랜덤 ───
 const ENCOURAGEMENTS = [
   '오늘도 수고했어요 ✨',
   '기록하는 당신, 멋져요 🌟',
@@ -75,15 +54,13 @@ function getRandomEncouragement() {
 }
 
 // ═══════════════════════════════════════
-//  컴포넌트: 추천 모드 토글
+//  ModeSelector
 // ═══════════════════════════════════════
 function ModeSelector({ mode, setMode }) {
   const current = MODE_OPTIONS.find((m) => m.value === mode);
-
   return (
     <div className={styles.modeSection}>
       <p className={styles.modeSectionLabel}>오늘의 추천 방향</p>
-
       <div className={styles.modeToggle}>
         {MODE_OPTIONS.map((opt) => (
           <button
@@ -97,7 +74,6 @@ function ModeSelector({ mode, setMode }) {
           </button>
         ))}
       </div>
-
       <div className={styles.modeDescription}>
         <strong className={styles.modeDescTitle}>{current.title}</strong>
         <span className={styles.modeDescText}>{current.description}</span>
@@ -107,36 +83,30 @@ function ModeSelector({ mode, setMode }) {
 }
 
 // ═══════════════════════════════════════
-//  Step 1: 일기 작성 폼
+//  Step 1: 일기 작성
 // ═══════════════════════════════════════
 function DiaryWriteStep({ diary, setDiary, mode, setMode, onNext, onBack }) {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = textarea.scrollHeight + 'px';
+    const ta = textareaRef.current;
+    if (ta) {
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
     }
   }, [diary.content]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (file.size > 5 * 1024 * 1024) {
       alert('이미지 크기는 5MB 이하만 가능합니다.');
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (event) => {
-      setDiary((prev) => ({
-        ...prev,
-        image: file,
-        imagePreview: event.target.result,
-      }));
+      setDiary((prev) => ({ ...prev, image: file, imagePreview: event.target.result }));
     };
     reader.readAsDataURL(file);
   };
@@ -151,9 +121,7 @@ function DiaryWriteStep({ diary, setDiary, mode, setMode, onNext, onBack }) {
   return (
     <div className={styles.writeStep}>
       <div className={styles.writeHeader}>
-        <button className={styles.backBtn} onClick={onBack} aria-label="뒤로가기">
-          ← 돌아가기
-        </button>
+        <button className={styles.backBtn} onClick={onBack}>← 돌아가기</button>
         <span className={styles.writeDate}>{getFormattedDate()}</span>
         <div className={styles.headerSpacer} />
       </div>
@@ -221,16 +189,14 @@ function DiaryWriteStep({ diary, setDiary, mode, setMode, onNext, onBack }) {
 }
 
 // ═══════════════════════════════════════
-//  Step 2: 마무리 트랜지션
+//  Step 2: 트랜지션
 // ═══════════════════════════════════════
 function TransitionStep({ onNext }) {
   const [message] = useState(getRandomEncouragement());
-
   useEffect(() => {
     const timer = setTimeout(onNext, 3000);
     return () => clearTimeout(timer);
   }, [onNext]);
-
   return (
     <div className={styles.transitionStep} onClick={onNext}>
       <div className={styles.transitionContent}>
@@ -243,35 +209,27 @@ function TransitionStep({ onNext }) {
 }
 
 // ═══════════════════════════════════════
-//  Step 3: AI 감정 분석 로딩
+//  Step 3: 분석 로딩
 // ═══════════════════════════════════════
 function AnalyzingStep({ isReady, onNext }) {
   const [dots, setDots] = useState('');
-
   useEffect(() => {
     const interval = setInterval(() => {
       setDots((prev) => (prev.length >= 3 ? '' : prev + '.'));
     }, 500);
     return () => clearInterval(interval);
   }, []);
-
   useEffect(() => {
     if (!isReady) return;
     const timer = setTimeout(onNext, 1000);
     return () => clearTimeout(timer);
   }, [isReady, onNext]);
-
   return (
     <div className={styles.analyzingStep}>
       <div className={styles.analyzingContent}>
         <div className={styles.analyzingSpinner} />
-        <h2 className={styles.analyzingText}>
-          AI가 오늘의 감정을 분석하고 있어요{dots}
-        </h2>
-        <p className={styles.analyzingSubtext}>
-          당신에게 어울리는 콘텐츠를 찾고 있습니다
-        </p>
-
+        <h2 className={styles.analyzingText}>AI가 오늘의 감정을 분석하고 있어요{dots}</h2>
+        <p className={styles.analyzingSubtext}>당신에게 어울리는 콘텐츠를 찾고 있습니다</p>
         <div className={styles.skeletonCards}>
           {[0, 1, 2].map((i) => (
             <div key={i} className={styles.skeletonCard}>
@@ -287,18 +245,14 @@ function AnalyzingStep({ isReady, onNext }) {
 }
 
 // ═══════════════════════════════════════
-//  Step 4: 추천 결과 카드 (콘텐츠별)
+//  Step 4: 카드 컴포넌트들
 // ═══════════════════════════════════════
 function MovieCard({ data }) {
   if (!data) return null;
   return (
     <div className={styles.resultCard}>
       <div className={styles.resultCardThumb}>
-        {data.image_url ? (
-          <img src={data.image_url} alt={data.title} />
-        ) : (
-          <span className={styles.resultCardThumbEmoji}>🎬</span>
-        )}
+        {data.image_url ? <img src={data.image_url} alt={data.title} /> : <span className={styles.resultCardThumbEmoji}>🎬</span>}
       </div>
       <div className={styles.resultCardBody}>
         <span className={styles.resultCardCategory}>🎬 영화</span>
@@ -321,11 +275,7 @@ function MusicCard({ data }) {
   return (
     <div className={styles.resultCard}>
       <div className={styles.resultCardThumb}>
-        {data.image_url ? (
-          <img src={data.image_url} alt={data.title} />
-        ) : (
-          <span className={styles.resultCardThumbEmoji}>🎵</span>
-        )}
+        {data.image_url ? <img src={data.image_url} alt={data.title} /> : <span className={styles.resultCardThumbEmoji}>🎵</span>}
       </div>
       <div className={styles.resultCardBody}>
         <span className={styles.resultCardCategory}>🎵 음악</span>
@@ -362,9 +312,7 @@ function BookCard({ data }) {
         {data.author && <p className={styles.resultCardMeta}>{data.author}</p>}
         {data.description && (
           <p className={styles.resultCardDesc}>
-            {data.description.length > 100
-              ? data.description.slice(0, 100) + '...'
-              : data.description}
+            {data.description.length > 100 ? data.description.slice(0, 100) + '...' : data.description}
           </p>
         )}
       </div>
@@ -372,9 +320,6 @@ function BookCard({ data }) {
   );
 }
 
-// ═══════════════════════════════════════
-//  Step 4: 추천 결과 페이지
-// ═══════════════════════════════════════
 function ResultStep({ recommendations, error, onGoHome, onGoRecommended, onRetry }) {
   const movie = recommendations?.movie;
   const music = recommendations?.music;
@@ -388,12 +333,8 @@ function ResultStep({ recommendations, error, onGoHome, onGoRecommended, onRetry
           <p className={styles.resultSubtitle}>{error}</p>
         </div>
         <div className={styles.resultActions}>
-          <button className={styles.resultPrimaryBtn} onClick={onRetry}>
-            🔄 다시 시도하기
-          </button>
-          <button className={styles.resultSecondaryBtn} onClick={onGoHome}>
-            🏠 홈으로 돌아가기
-          </button>
+          <button className={styles.resultPrimaryBtn} onClick={onRetry}>🔄 다시 시도하기</button>
+          <button className={styles.resultSecondaryBtn} onClick={onGoHome}>🏠 홈으로 돌아가기</button>
         </div>
       </div>
     );
@@ -405,20 +346,14 @@ function ResultStep({ recommendations, error, onGoHome, onGoRecommended, onRetry
         <h2 className={styles.resultTitle}>오늘의 당신에게 어울리는 문화 콘텐츠</h2>
         <p className={styles.resultSubtitle}>Day by Day 자체 AI가 일기 내용을 바탕으로 선별했어요</p>
       </div>
-
       <div className={styles.resultCards}>
         <MovieCard data={movie} />
         <MusicCard data={music} />
         <BookCard data={book} />
       </div>
-
       <div className={styles.resultActions}>
-        <button className={styles.resultPrimaryBtn} onClick={onGoRecommended}>
-          🎁 추천 보관함에서 더 보기
-        </button>
-        <button className={styles.resultSecondaryBtn} onClick={onGoHome}>
-          🏠 홈으로 돌아가기
-        </button>
+        <button className={styles.resultPrimaryBtn} onClick={onGoRecommended}>🎁 추천 보관함에서 더 보기</button>
+        <button className={styles.resultSecondaryBtn} onClick={onGoHome}>🏠 홈으로 돌아가기</button>
       </div>
     </div>
   );
@@ -433,10 +368,7 @@ function WriteDiary() {
 
   const [step, setStep] = useState('write');
   const [diary, setDiary] = useState({
-    content: '',
-    weather: '',
-    image: null,
-    imagePreview: null,
+    content: '', weather: '', image: null, imagePreview: null,
   });
   const [mode, setMode] = useState('maintain');
 
@@ -449,34 +381,20 @@ function WriteDiary() {
     if (!user) navigate('/login');
   }, [user, navigate]);
 
-  // ─── Step 1 → Step 2: 일기를 백엔드에 저장 ───
+  // ─── Step 1 → Step 2: 일기 저장 ───
   const handleFinishWrite = async () => {
     try {
-      const token = localStorage.getItem('token');
-
       const formData = new FormData();
       formData.append('content', diary.content);
-      if (diary.weather) {
-        formData.append('weather', WEATHER_MAP[diary.weather]);
-      }
-      if (diary.image) {
-        formData.append('image', diary.image);
-      }
+      if (diary.weather) formData.append('weather', WEATHER_MAP[diary.weather]);
+      if (diary.image) formData.append('image', diary.image);
 
-      const res = await axios.post(
-        `${API_BASE}/api/diary/create/`,
-        formData,
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      const res = await api.post('/api/diary/create/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
 
       setDiaryId(res.data.id);
       console.log('[diary/create] 응답:', res.data);
-
       setStep('transition');
     } catch (err) {
       console.error('일기 저장 실패:', err);
@@ -484,40 +402,27 @@ function WriteDiary() {
     }
   };
 
-  // ─── Step 2 → Step 3 → Step 4: 감정 분석 + 콘텐츠 추천 ───
+  // ─── Step 2 → Step 3 → Step 4: 감정 분석 + 추천 ───
   const handleTransitionEnd = async () => {
     setStep('analyzing');
     setIsResultReady(false);
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const authHeader = { headers: { Authorization: `Token ${token}` } };
-
-      // (1) 감정 분석
-      const analyzeRes = await axios.post(
-        `${API_BASE}/api/diary/send/`,
-        { diary_id: diaryId },
-        authHeader
-      );
+      const analyzeRes = await api.post('/api/diary/send/', { diary_id: diaryId });
       console.log('[diary/send] 응답:', analyzeRes.data);
 
-      // (2) 영화/음악/책 추천 병렬 호출
-      // ⚠️ 핵심: diary_id를 URL path에 넣고, body엔 mode/count만 전송
-      // - 영화: POST /api/movie/{diary_id}/
-      // - 음악: POST /api/music/{diary_id}/
-      // - 책:   POST /api/recommend/books/{diary_id}/
       const payload = { mode, count: 3 };
 
       const [movieRes, musicRes, bookRes] = await Promise.all([
-        axios.post(`${API_BASE}/api/recommend/movie/${diaryId}/`, payload, authHeader),
-        axios.post(`${API_BASE}/api/recommend/music/${diaryId}/`, payload, authHeader),
-        axios.post(`${API_BASE}/api/recommend/books/${diaryId}/`, payload, authHeader),
+        api.post(`/api/recommend/movie/${diaryId}/`, payload),
+        api.post(`/api/recommend/music/${diaryId}/`, payload),
+        api.post(`/api/recommend/books/${diaryId}/`, payload),
       ]);
 
-      console.log('[movie] 응답:', movieRes.data);
-      console.log('[music] 응답:', musicRes.data);
-      console.log('[books] 응답:', bookRes.data);
+      console.log('[movie]', movieRes.data);
+      console.log('[music]', musicRes.data);
+      console.log('[books]', bookRes.data);
 
       setRecommendations({
         movie: movieRes.data.recommendations?.[0] || null,
@@ -529,19 +434,13 @@ function WriteDiary() {
       console.error('감정 분석/추천 실패:', err);
       console.error('실패한 요청 URL:', err.config?.url);
       console.error('응답 상태:', err.response?.status, err.response?.data);
-      setError(
-        err.response?.data?.detail ||
-          `서버 응답을 받지 못했습니다. (${err.response?.status || 'NETWORK'})`
-      );
+      setError(err.response?.data?.detail || `서버 응답을 받지 못했습니다. (${err.response?.status || 'NETWORK'})`);
       setIsResultReady(true);
     }
   };
 
   const handleAnalysisEnd = () => setStep('result');
-  const handleRetry = () => {
-    setError(null);
-    handleTransitionEnd();
-  };
+  const handleRetry = () => { setError(null); handleTransitionEnd(); };
   const handleGoHome = () => navigate('/');
   const handleGoRecommended = () => navigate('/recommended');
   const handleGoBack = () => navigate('/');
@@ -561,9 +460,7 @@ function WriteDiary() {
         />
       )}
       {step === 'transition' && <TransitionStep onNext={handleTransitionEnd} />}
-      {step === 'analyzing' && (
-        <AnalyzingStep isReady={isResultReady} onNext={handleAnalysisEnd} />
-      )}
+      {step === 'analyzing' && <AnalyzingStep isReady={isResultReady} onNext={handleAnalysisEnd} />}
       {step === 'result' && (
         <ResultStep
           recommendations={recommendations}
