@@ -9,6 +9,7 @@ import Mypage from './pages/Mypage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import WriteDiary from './pages/WriteDiary';
+import DiaryDetail from './pages/DiaryDetail';
 import './App.css';
 
 function App() {
@@ -72,6 +73,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <WriteDiary />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/diary/:username/:date"
+            element={
+              <ProtectedRoute>
+                <DiaryDetail />
               </ProtectedRoute>
             }
           />

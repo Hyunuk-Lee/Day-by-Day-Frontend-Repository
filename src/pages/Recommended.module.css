@@ -1,0 +1,825 @@
+/* ========================================================
+ * Recommended.module.css
+ * Day by Day — 추천 페이지 (최근 7일 책/음악/영화)
+ * global.css의 디자인 토큰 + Calendar/Mainpage와 일관된 톤
+ * ======================================================== */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ───── 배경 글로우 (Calendar와 통일) ───── */
+.page::before {
+  content: '';
+  position: fixed;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(125, 211, 252, 0.18) 0%,
+    rgba(125, 211, 252, 0.06) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(40px);
+}
+
+/* ========================================================
+ * 상단 네비게이션
+ * ======================================================== */
+.topnav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  height: 64px;
+  background: rgba(248, 250, 252, 0.65);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid var(--color-surface-border);
+}
+
+.topnavLeft,
+.topnavRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topnavLogo {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: -0.02em;
+}
+
+.topnavLink {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+  letter-spacing: 0.01em;
+}
+
+.topnavLink:hover {
+  color: var(--color-primary);
+  background: rgba(30, 64, 175, 0.06);
+}
+
+.topnavLogout {
+  color: var(--color-text-muted);
+}
+
+.topnavLogout:hover {
+  color: #DC2626;
+  background: rgba(220, 38, 38, 0.06);
+}
+
+/* ========================================================
+ * 메인 컨테이너
+ * ======================================================== */
+.main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 104px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  animation: fadeUp 0.6s var(--transition-base);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ───── 페이지 헤더 ───── */
+.pageHeader {
+  padding: 0 4px;
+}
+
+.pageSub {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.pageTitle {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+
+.pageDesc {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+
+.pageDescCount {
+  margin-left: 8px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========================================================
+ * 에러 배너
+ * ======================================================== */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: rgba(232, 144, 144, 0.12);
+  border: 1px solid rgba(232, 144, 144, 0.3);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  color: #B85555;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.errorIcon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* ========================================================
+ * 로딩 상태
+ * ======================================================== */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 20px;
+  gap: 18px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(30, 64, 175, 0.15);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ========================================================
+ * 전역 빈 상태 (7일간 기록 0개)
+ * ======================================================== */
+.globalEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 60px 24px 80px;
+  gap: 14px;
+  background: var(--color-surface);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.globalEmptyIcon {
+  font-size: 48px;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+.globalEmptyTitle {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.globalEmptyText {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  max-width: 360px;
+}
+
+.writeCta {
+  margin-top: 12px;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-light) 100%
+  );
+  border: none;
+  border-radius: 999px;
+  padding: 10px 24px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: var(--shadow-button);
+  transition: all var(--transition-base);
+  letter-spacing: 0.02em;
+}
+
+.writeCta:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-button-hover);
+}
+
+/* ========================================================
+ * 날짜 카드 목록
+ * ======================================================== */
+.dayList {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.dayCard {
+  background: var(--color-surface);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow var(--transition-base);
+}
+
+/* 카드 상단 광택 라인 */
+.dayCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.9),
+    transparent
+  );
+}
+
+/* 빈 카드는 한 톤 가볍게 */
+.dayCardEmpty {
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: var(--shadow-sm);
+  padding: 22px 28px;
+}
+
+/* 오늘 카드 — 살짝 강조 */
+.dayCardToday {
+  border-color: rgba(30, 64, 175, 0.2);
+  box-shadow:
+    var(--shadow-lg),
+    0 0 0 1px rgba(125, 211, 252, 0.2),
+    0 8px 28px rgba(125, 211, 252, 0.14);
+}
+
+.dayCardToday::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 12px rgba(30, 64, 175, 0.4);
+  animation: todayPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes todayPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* ───── 날짜 카드 헤더 ───── */
+.dayHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.dayHeaderLeft {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dayLabel {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.dayCardToday .dayLabel {
+  color: var(--color-primary);
+}
+
+.dayDate {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+.dayMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weatherBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--color-surface-border);
+  font-size: 15px;
+  cursor: default;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.emotionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px 5px 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.1),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.emotionBadgeEmoji {
+  font-size: 14px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.08));
+}
+
+.emotionBadgeLabel {
+  letter-spacing: 0.02em;
+}
+
+/* ───── 일기 미리보기 ───── */
+.diaryPreview {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.4);
+  border-left: 3px solid var(--color-primary-light);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  margin: 0 0 22px 0;
+  font-style: italic;
+}
+
+/* ========================================================
+ * 추천 콘텐츠
+ * ======================================================== */
+.recommendations {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 4px 12px 4px 10px;
+  background: rgba(30, 64, 175, 0.08);
+  border: 1px solid rgba(30, 64, 175, 0.15);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  letter-spacing: 0.02em;
+}
+
+.modeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 6px rgba(30, 64, 175, 0.5);
+}
+
+/* ───── 카테고리 ───── */
+.category {
+  padding-top: 18px;
+  border-top: 1px solid var(--color-surface-border);
+}
+
+.category:first-of-type {
+  padding-top: 0;
+  border-top: none;
+}
+
+.categoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.categoryTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.categoryIcon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.categoryCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: rgba(203, 213, 225, 0.4);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* ───── 토글 버튼 ───── */
+.toggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 999px;
+  transition: all var(--transition-base);
+  letter-spacing: 0.02em;
+}
+
+.toggleBtn:hover {
+  background: rgba(30, 64, 175, 0.08);
+}
+
+.toggleBtn svg {
+  transition: transform var(--transition-base);
+}
+
+.toggleExpanded svg {
+  transform: rotate(180deg);
+}
+
+/* ───── 아이템 리스트 ───── */
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: itemsAppear 0.3s var(--transition-base);
+}
+
+@keyframes itemsAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ───── 아이템 카드 (책/음악/영화 공통) ───── */
+.itemCard {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: inherit;
+  transition: all var(--transition-base);
+}
+
+.itemCard:hover {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-md);
+  transform: translateX(4px);
+  border-color: rgba(125, 211, 252, 0.3);
+}
+
+.itemThumb {
+  width: 60px;
+  height: 88px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-bg-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 음악은 정사각형 (앨범 아트) */
+.itemThumbSquare {
+  height: 60px;
+}
+
+.itemThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-base);
+}
+
+.itemCard:hover .itemThumb img {
+  transform: scale(1.05);
+}
+
+.itemPlaceholder {
+  font-size: 26px;
+  opacity: 0.4;
+}
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  justify-content: center;
+}
+
+.itemTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  /* 2줄 ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: keep-all;
+}
+
+.itemMeta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemDesc {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  margin-top: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ───── 태그 ───── */
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tag {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  padding: 2px 8px;
+  background: rgba(203, 213, 225, 0.35);
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ───── 빈 상태 / 추천 없음 ───── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0 8px;
+  gap: 8px;
+}
+
+.emptyIcon {
+  font-size: 26px;
+  opacity: 0.6;
+}
+
+.emptyState p {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  letter-spacing: 0.01em;
+}
+
+.noRec {
+  text-align: center;
+  padding: 24px 16px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-surface-border);
+}
+
+/* ========================================================
+ * 반응형
+ * ======================================================== */
+@media (max-width: 600px) {
+  .topnav {
+    padding: 0 20px;
+  }
+
+  .topnavLink {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .main {
+    padding: 88px 16px 60px;
+    gap: 22px;
+  }
+
+  .pageTitle {
+    font-size: 26px;
+  }
+
+  .pageDesc {
+    font-size: 13px;
+  }
+
+  .dayCard {
+    padding: 22px 20px;
+  }
+
+  .dayCardEmpty {
+    padding: 18px 20px;
+  }
+
+  .dayLabel {
+    font-size: 19px;
+  }
+
+  .dayHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .diaryPreview {
+    font-size: 13px;
+    padding: 12px 14px;
+  }
+
+  .itemCard {
+    padding: 10px;
+    gap: 12px;
+  }
+
+  .itemThumb {
+    width: 52px;
+    height: 76px;
+  }
+
+  .itemThumbSquare {
+    height: 52px;
+  }
+
+  .itemTitle {
+    font-size: 13.5px;
+  }
+
+  .toggleBtn {
+    padding: 5px 10px;
+    font-size: 11.5px;
+  }
+}
+
+@media (max-width: 400px) {
+  .categoryHeader {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tag {
+    max-width: 100px;
+  }
+}
+
+/* ───── 모션 감도 ───── */
+@media (prefers-reduced-motion: reduce) {
+  .main,
+  .itemList,
+  .spinner,
+  .dayCardToday::after {
+    animation: none;
+    transition: none;
+  }
+
+  .itemCard:hover {
+    transform: none;
+  }
+
+  .itemCard:hover .itemThumb img {
+    transform: none;
+  }
+
+  .toggleBtn svg {
+    transition: none;
+  }
+}

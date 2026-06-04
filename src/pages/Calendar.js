@@ -20,7 +20,7 @@ const EMOTION_META = {
   sadness:  { emoji: '😢', label: '슬픔',   colorVar: 'var(--emotion-sadness)' },
   anger:    { emoji: '😠', label: '분노',   colorVar: 'var(--emotion-anger)' },
   fear:     { emoji: '😨', label: '두려움', colorVar: 'var(--emotion-fear)' },
-  trust:    { emoji: '🙂', label: '신뢰',   colorVar: 'var(--emotion-trust)' },
+  trust:    { emoji: '😌', label: '신뢰',   colorVar: 'var(--emotion-trust)' },
   surprise: { emoji: '😲', label: '놀람',   colorVar: 'var(--emotion-surprise)' },
   unknown:  { emoji: '·',  label: '기록 없음', colorVar: 'var(--emotion-unknown)' },
 };
@@ -211,13 +211,11 @@ function Calendar() {
 
     const entry = diaryMap[cell.dateKey];
     if (entry) {
-      // 일기 + 추천 컨텐츠 페이지로 이동 (diary_id 함께 전달)
-      navigate('/recommended', {
-        state: {
-          date: cell.dateKey,
-          diary_id: entry.diary_id,
-        },
-      });
+      // 일기가 있는 날짜 → 날짜별 상세 페이지로 이동
+      // username이 있으면 /diary/{username}/{date}, 없으면 캘린더에 머무름
+      if (user?.username) {
+        navigate(`/diary/${user.username}/${cell.dateKey}`);
+      }
     } else {
       // 일기가 없는 날짜 → 일기 작성 페이지로
       // navigate(`/diary/write?date=${cell.dateKey}`);
