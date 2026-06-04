@@ -1,43 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import styles from './Mainpage.module.css';
 
-// ─── API Base (.env에서 주입, 배포 시 빈 문자열 → Netlify 프록시) ───
-const API_BASE = process.env.REACT_APP_API_URL || '';
+// ─── 백엔드 베이스 URL (AWS 배포) ───
+const API_BASE = 'http://54.180.152.247:8000';
 
-// ─── 감정 → 이모지 / 색상 / 한글 라벨 매핑 (캘린더와 동일) ───
-const EMOTION_META = {
-  joy:      { emoji: '😊', label: '기쁨',   color: '#FBBF77' }, // 따뜻한 머스타드
-  sadness:  { emoji: '😢', label: '슬픔',   color: '#6FA8DC' }, // 차분한 세룰리안
-  anger:    { emoji: '😠', label: '분노',   color: '#E89090' }, // 옅은 코랄
-  fear:     { emoji: '😨', label: '두려움', color: '#B5A8D9' }, // 라벤더 그레이
-  trust:    { emoji: '🙂', label: '신뢰',   color: '#9BC4A5' }, // 세이지 그린
-  surprise: { emoji: '😲', label: '놀람',   color: '#F5C7B8' }, // 살구 핑크
-};
-
-// 한글 primary_emotion → 영문 키 (emotion_key 누락 시 fallback)
-const KOR_TO_KEY = {
-  '기쁨': 'joy',
-  '슬픔': 'sadness',
-  '분노': 'anger',
-  '두려움': 'fear',
-  '신뢰': 'trust',
-  '놀람': 'surprise',
-  '알수없음': 'unknown',
-};
-
-// ─── 날씨 코드 → 이모지 (캘린더와 동일) ───
-const WEATHER_EMOJI = {
-  SUNNY: '☀️',
-  CLOUDY: '☁️',
-  RAINY: '🌧️',
-  SNOWY: '❄️',
-  THUNDER: '⛈️',
-};
-
-// ─── 유틸: 시간대별 인사말 & 이모지 ───
+// ─── 유틸: 시간대별 인사말 ───
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 12) return { text: '좋은 아침이에요', emoji: '☀️' };
@@ -46,23 +16,23 @@ function getGreeting() {
   return { text: '늦은 밤이에요', emoji: '🌙' };
 }
 
-// ─── 유틸: 오늘 날짜 포맷 ───
+// ─── 유틸: 날짜 포맷 ───
 function getFormattedDate() {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const date = now.getDate();
   const days = ['일', '월', '화', '수', '목', '금', '토'];
-  const day = days[now.getDay()];
-  return `${year}. ${month}. ${date}. ${day}요일`;
+  return `${now.getFullYear()}. ${now.getMonth() + 1}. ${now.getDate()}. ${days[now.getDay()]}요일`;
 }
 
-// ─── 유틸: 로컬 기준 YYYY-MM-DD 키 생성 (UTC 변환 오류 방지) ───
-function toDateKey(d) {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const date = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${date}`;
+function formatDateForAPI(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function formatShortDate(isoString) {
+  const d = new Date(isoString);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 // ─── 유틸: 이번 주 날짜 배열 (월~일) ───
@@ -74,22 +44,65 @@ function getWeekDates() {
   monday.setDate(now.getDate() + mondayOffset);
 
   const labels = ['월', '화', '수', '목', '금', '토', '일'];
+
   return labels.map((label, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    const isToday =
-      d.getFullYear() === now.getFullYear() &&
-      d.getMonth() === now.getMonth() &&
-      d.getDate() === now.getDate();
-    const isPast = d < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    d.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     return {
       label,
       date: d.getDate(),
-      dateKey: toDateKey(d), // 'YYYY-MM-DD' — moodData 조회 키
-      isToday,
-      isPast,
+      fullDate: d,
+      isToday: d.getTime() === today.getTime(),
+      isPast: d < today,
     };
   });
+}
+
+// ─── 유틸: 한글 감정 → 이모지 / 색상 ───
+const EMOTION_META = {
+  '기쁨': { emoji: '😊', color: '#FCD34D' },
+  '슬픔': { emoji: '😢', color: '#93C5FD' },
+  '분노': { emoji: '😠', color: '#FCA5A5' },
+  '공포': { emoji: '😨', color: '#C4B5FD' },
+  '신뢰': { emoji: '😌', color: '#86EFAC' },
+  '놀람': { emoji: '😲', color: '#FDBA74' },
+};
+
+function getEmotionMeta(primaryEmotion) {
+  return EMOTION_META[primaryEmotion] || { emoji: '🌙', color: '#CBD5E1' };
+}
+
+// ─── 유틸: 날씨 enum → 이모지 ───
+const WEATHER_EMOJI = {
+  SUNNY: '☀️',
+  CLOUDY: '⛅',
+  RAINY: '🌧',
+  SNOWY: '❄️',
+  WINDY: '💨',
+  THUNDER: '⛈',
+};
+
+function getWeatherEmoji(weather) {
+  return WEATHER_EMOJI[weather] || '';
+}
+
+// ─── 유틸: 영화 tags 파싱 ───
+function parseMovieTags(tags) {
+  if (!tags || tags.length === 0) return [];
+  const first = tags[0];
+  if (typeof first === 'string' && first.trim().startsWith('[')) {
+    try {
+      return JSON.parse(first.replace(/'/g, '"'));
+    } catch {
+      return tags;
+    }
+  }
+  return tags;
 }
 
 // ═══════════════════════════════════════
@@ -99,11 +112,13 @@ function TopNav({ user, onLogout, onNavigate }) {
   return (
     <nav className={styles.topnav}>
       <div className={styles.topnavLeft}>
+        <button className={styles.topnavMenuBtn} aria-label="메뉴">☰</button>
         <span className={styles.topnavLogo}>Day by Day</span>
       </div>
       <div className={styles.topnavRight}>
         <button className={styles.topnavLink} onClick={() => onNavigate('/calendar')}>캘린더</button>
         <button className={styles.topnavLink} onClick={() => onNavigate('/recommended')}>추천 보관함</button>
+        <button className={styles.topnavLink} onClick={() => onNavigate('/Mypage')}>마이페이지</button>
         {user ? (
           <button className={`${styles.topnavLink} ${styles.topnavLogout}`} onClick={onLogout}>로그아웃</button>
         ) : (
@@ -115,12 +130,16 @@ function TopNav({ user, onLogout, onNavigate }) {
 }
 
 // ═══════════════════════════════════════
-//  컴포넌트: 히어로 섹션 (인사말 + CTA)
+//  컴포넌트: 히어로 섹션
+//  - 공감 멘트 있음 → 감정 이모지 + Serif 인용문
+//  - 공감 멘트 없음 → 기존 단순 카피
 // ═══════════════════════════════════════
-function HeroSection({ user, onStartDiary }) {
+function HeroSection({ user, todayDiary, empathy, onStartDiary, onViewToday }) {
   const greeting = getGreeting();
   const dateStr = getFormattedDate();
   const displayName = user ? user.username : '방문자';
+  const hasToday = !!todayDiary;
+  const hasEmpathy = !!(empathy?.has_diaries && empathy?.empathy_message);
 
   return (
     <section className={styles.heroSection}>
@@ -130,10 +149,37 @@ function HeroSection({ user, onStartDiary }) {
       </h1>
 
       <div className={styles.heroCard}>
-        <p className={styles.heroCardText}>오늘은 어떤 하루였나요?</p>
-        <button className={styles.heroCta} onClick={onStartDiary}>
-          ✍️ 기록 시작하기
-        </button>
+        {/* ─── 메시지 영역 ─── */}
+        {hasEmpathy ? (
+          // 공감 멘트 (감정 블롭 + Serif 인용문)
+          <div className={styles.empathyBlock}>
+            <div
+              className={styles.empathyEmoji}
+              style={{ background: getEmotionMeta(empathy.primary_emotion).color }}
+            >
+              {getEmotionMeta(empathy.primary_emotion).emoji}
+            </div>
+            <p className={styles.empathyMessage}>
+              {empathy.empathy_message}
+            </p>
+          </div>
+        ) : (
+          // 기존 카피 fallback
+          <p className={styles.heroCardText}>
+            {hasToday ? '오늘의 기록을 마치셨어요 ✨' : '오늘은 어떤 하루였나요?'}
+          </p>
+        )}
+
+        {/* ─── CTA 버튼 ─── */}
+        {hasToday ? (
+          <button className={styles.heroCta} onClick={onViewToday}>
+            📖 오늘의 추천 다시 보기
+          </button>
+        ) : (
+          <button className={styles.heroCta} onClick={onStartDiary}>
+            ✍️ 기록 시작하기
+          </button>
+        )}
       </div>
     </section>
   );
@@ -141,29 +187,8 @@ function HeroSection({ user, onStartDiary }) {
 
 // ═══════════════════════════════════════
 //  컴포넌트: 이번 주 마음 흐름
-//  moodData: { 'YYYY-MM-DD': { emotion_key, emoji, label, color, weather, preview } }
 // ═══════════════════════════════════════
-function WeeklyMood({ weekDates, moodData, isLoading }) {
-  // 날짜별 표시 방식 결정
-  const getMoodStyle = (dateInfo) => {
-    const entry = moodData[dateInfo.dateKey];
-
-    // 1) 일기가 있는 날 → 감정 이모지 블롭
-    if (entry) {
-      return { type: 'emotion', ...entry };
-    }
-    // 2) 오늘인데 아직 기록 없음 → 점선 원 (작성 유도)
-    if (dateInfo.isToday) {
-      return { type: 'empty' };
-    }
-    // 3) 지나간 날인데 기록 없음 → 옅은 빈 원
-    if (dateInfo.isPast) {
-      return { type: 'missing' };
-    }
-    // 4) 아직 오지 않은 미래 → 작은 점
-    return { type: 'none' };
-  };
-
+function WeeklyMood({ weekDates, weeklyData, isLoading }) {
   return (
     <section className={styles.weeklyMood}>
       <h2 className={styles.sectionTitle}>
@@ -171,49 +196,46 @@ function WeeklyMood({ weekDates, moodData, isLoading }) {
         이번 주 마음 흐름
         <span className={styles.sectionLine} />
       </h2>
-
-      <div className={`${styles.moodRow} ${isLoading ? styles.moodLoading : ''}`}>
+      <div className={styles.moodRow}>
         {weekDates.map((d, i) => {
-          const mood = getMoodStyle(d);
-          const weatherEmoji = mood.weather ? WEATHER_EMOJI[mood.weather] : null;
+          const dateKey = formatDateForAPI(d.fullDate);
+          const diary = weeklyData[dateKey];
+
           return (
             <div
               key={i}
               className={`${styles.moodItem} ${d.isToday ? styles.moodToday : ''}`}
             >
               <span className={styles.moodLabel}>{d.label}</span>
-              <div className={styles.moodDotWrapper}>
-                {mood.type === 'emotion' && (
-                  <span
-                    className={styles.moodEmotion}
-                    style={{ backgroundColor: mood.color }}
-                  >
-                    <span className={styles.moodEmoji}>{mood.emoji}</span>
-                  </span>
-                )}
-                {mood.type === 'empty' && (
-                  <span className={`${styles.moodDot} ${styles.moodEmpty}`} />
-                )}
-                {mood.type === 'missing' && (
-                  <span className={`${styles.moodDot} ${styles.moodMissing}`} />
-                )}
-                {mood.type === 'none' && (
-                  <span className={`${styles.moodDot} ${styles.moodNone}`} />
-                )}
 
-                {/* 일기가 있는 날 → 호버 시 감정 + 미리보기 툴팁 (캘린더와 동일) */}
-                {mood.type === 'emotion' && (
-                  <span className={styles.tooltip}>
-                    <span className={styles.tooltipHeader}>
-                      {weatherEmoji && <span>{weatherEmoji}</span>}
-                      <span>{mood.label}</span>
-                    </span>
-                    {mood.preview && (
-                      <span className={styles.tooltipPreview}>
-                        {mood.preview}
+              <div className={styles.moodDotWrapper}>
+                {diary ? (
+                  <>
+                    <div
+                      className={`${styles.moodEmotion} ${isLoading ? styles.moodLoading : ''}`}
+                      style={{ backgroundColor: getEmotionMeta(diary.emotion?.primary_emotion).color }}
+                    >
+                      <span className={styles.moodEmoji}>
+                        {getEmotionMeta(diary.emotion?.primary_emotion).emoji}
                       </span>
-                    )}
-                  </span>
+                    </div>
+                    <div className={styles.tooltip}>
+                      <div className={styles.tooltipHeader}>
+                        {getWeatherEmoji(diary.weather)} {diary.emotion?.primary_emotion || ''}
+                      </div>
+                      {diary.content && (
+                        <div className={styles.tooltipPreview}>
+                          {diary.content.slice(0, 60)}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : d.isToday ? (
+                  <span className={`${styles.moodDot} ${styles.moodEmpty}`} />
+                ) : d.isPast ? (
+                  <span className={`${styles.moodDot} ${styles.moodMissing}`} />
+                ) : (
+                  <span className={`${styles.moodDot} ${styles.moodNone}`} />
                 )}
               </div>
             </div>
@@ -227,12 +249,65 @@ function WeeklyMood({ weekDates, moodData, isLoading }) {
 // ═══════════════════════════════════════
 //  컴포넌트: 오늘 추천받은 콘텐츠
 // ═══════════════════════════════════════
-function RecommendedPreview({ items, onNavigate }) {
-  const dummyItems = items.length > 0 ? items : [
-    { type: '🎬', title: '추천 영화가 아직 없어요', thumbnail: null, id: null },
-    { type: '🎵', title: '추천 음악이 아직 없어요', thumbnail: null, id: null },
-    { type: '📖', title: '추천 책이 아직 없어요', thumbnail: null, id: null },
-  ];
+function RecommendedPreview({ todayDiary, onNavigate, onStartDiary }) {
+  const rec = todayDiary?.recommendation?.[0];
+  const music = rec?.musics?.[0];
+  const movie = rec?.movies?.[0];
+  const book = rec?.books?.[0];
+
+  if (!rec || (!music && !movie && !book)) {
+    return (
+      <section className={styles.sectionCard}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionSubtitle}>🎁 오늘 추천받은 콘텐츠</h2>
+        </div>
+        <div className={styles.recommendedEmpty}>
+          {todayDiary ? (
+            <p>추천이 아직 준비되지 않았어요.</p>
+          ) : (
+            <>
+              <p className={styles.recommendedEmptyText}>아직 오늘 일기를 작성하지 않으셨네요.</p>
+              <button className={styles.linkBtn} onClick={onStartDiary}>
+                ✍️ 일기 쓰러 가기 →
+              </button>
+            </>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  const cards = [];
+  if (movie) {
+    cards.push({
+      key: `movie-${movie.movie_id}`,
+      type: '🎬', typeLabel: '영화',
+      title: movie.title,
+      subtitle: movie.director || '',
+      image: movie.image_url,
+      link: movie.link_url,
+    });
+  }
+  if (music) {
+    cards.push({
+      key: `music-${music.track_id}`,
+      type: '🎵', typeLabel: '음악',
+      title: music.title,
+      subtitle: music.artist || '',
+      image: music.image_url,
+      link: music.link_url,
+    });
+  }
+  if (book) {
+    cards.push({
+      key: `book-${book.isbn}`,
+      type: '📖', typeLabel: '책',
+      title: book.title,
+      subtitle: book.author || '',
+      image: book.cover_url,
+      link: book.link?.replace(/&amp;/g, '&'),
+    });
+  }
 
   return (
     <section className={styles.sectionCard}>
@@ -243,17 +318,27 @@ function RecommendedPreview({ items, onNavigate }) {
         </button>
       </div>
       <div className={styles.recommendedScroll}>
-        {dummyItems.map((item, i) => (
-          <div key={i} className={styles.recommendedCard}>
+        {cards.map((item) => (
+          <a
+            key={item.key}
+            href={item.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.recommendedCard}
+          >
             <div className={styles.recommendedThumbnail}>
-              {item.thumbnail ? (
-                <img src={item.thumbnail} alt={item.title} />
+              {item.image ? (
+                <img src={item.image} alt={item.title} />
               ) : (
                 <span className={styles.recommendedPlaceholder}>{item.type}</span>
               )}
             </div>
+            <p className={styles.recommendedType}>{item.type} {item.typeLabel}</p>
             <p className={styles.recommendedTitle}>{item.title}</p>
-          </div>
+            {item.subtitle && (
+              <p className={styles.recommendedSubtitle}>{item.subtitle}</p>
+            )}
+          </a>
         ))}
       </div>
     </section>
@@ -264,10 +349,18 @@ function RecommendedPreview({ items, onNavigate }) {
 //  컴포넌트: 최근 일기 목록
 // ═══════════════════════════════════════
 function RecentDiaries({ diaries, onNavigate }) {
-  const dummyDiaries = diaries.length > 0 ? diaries : [
-    { id: 1, date: '5/14', weather: '🌧', mood: '차분함', preview: '오늘은 비가 와서 집에서 조용히...' },
-    { id: 2, date: '5/13', weather: '☀️', mood: '활기참', preview: '날씨가 좋아서 산책을 했다...' },
-  ];
+  if (!diaries || diaries.length === 0) {
+    return (
+      <section className={styles.sectionCard}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionSubtitle}>최근 일기</h2>
+        </div>
+        <div className={styles.recommendedEmpty}>
+          <p>아직 작성된 일기가 없어요. 오늘부터 시작해보세요!</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.sectionCard}>
@@ -278,14 +371,26 @@ function RecentDiaries({ diaries, onNavigate }) {
         </button>
       </div>
       <div className={styles.diaryList}>
-        {dummyDiaries.map((diary) => (
-          <div key={diary.id} className={styles.diaryCard}>
+        {diaries.map((diary) => (
+          <div
+            key={diary.id}
+            className={styles.diaryCard}
+            onClick={() => onNavigate('/calendar')}
+          >
             <div className={styles.diaryMeta}>
-              <span className={styles.diaryDate}>{diary.date}</span>
-              <span className={styles.diaryWeather}>{diary.weather}</span>
-              <span className={styles.diaryMoodTag}>{diary.mood}</span>
+              <span className={styles.diaryDate}>{formatShortDate(diary.created_at)}</span>
+              {diary.weather && (
+                <span className={styles.diaryWeather}>{getWeatherEmoji(diary.weather)}</span>
+              )}
+              {diary.emotion?.primary_emotion && (
+                <span className={styles.diaryMoodTag}>
+                  {getEmotionMeta(diary.emotion.primary_emotion).emoji} {diary.emotion.primary_emotion}
+                </span>
+              )}
             </div>
-            <p className={styles.diaryPreview}>"{diary.preview}"</p>
+            <p className={styles.diaryPreview}>
+              "{(diary.content || '').slice(0, 80)}{diary.content?.length > 80 ? '...' : ''}"
+            </p>
           </div>
         ))}
       </div>
@@ -300,13 +405,80 @@ function Mainpage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const [recommendedItems, setRecommendedItems] = useState([]);
-  const [recentDiaries, setRecentDiaries] = useState([]);
-  const [moodData, setMoodData] = useState({});       // { 'YYYY-MM-DD': { emotion_key, label, color } }
-  const [moodLoading, setMoodLoading] = useState(false);
+  const [weeklyData, setWeeklyData] = useState({});
+  const [empathy, setEmpathy] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const weekDates = getWeekDates();
+  const todayKey = formatDateForAPI(new Date());
+  const todayDiary = weeklyData[todayKey] || null;
 
+  const recentDiaries = Object.entries(weeklyData)
+    .filter(([key]) => key !== todayKey)
+    .map(([, data]) => data)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 3);
+
+  // ─── 이번 주 일기 병렬 조회 ───
+  const fetchWeeklyData = useCallback(async () => {
+    if (!user) return;
+    setIsLoading(true);
+
+    const token = localStorage.getItem('token');
+    const authHeader = { headers: { Authorization: `Token ${token}` } };
+
+    const requests = weekDates.map((d) => {
+      const dateStr = formatDateForAPI(d.fullDate);
+      return axios
+        .get(`${API_BASE}/api/diary/${dateStr}/`, authHeader)
+        .then((res) => ({ date: dateStr, data: res.data }))
+        .catch((err) => {
+          if (err.response?.status !== 404) {
+            console.warn(`[diary/${dateStr}] 조회 실패:`, err.message);
+          }
+          return null;
+        });
+    });
+
+    try {
+      const results = await Promise.all(requests);
+      const data = {};
+      results.forEach((r) => {
+        if (r && r.data && r.data.id) data[r.date] = r.data;
+      });
+      setWeeklyData(data);
+    } catch (err) {
+      console.error('이번 주 일기 조회 중 오류:', err);
+    } finally {
+      setIsLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // ─── 공감 멘트 조회 ───
+  const fetchEmpathy = useCallback(async () => {
+    if (!user) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_BASE}/api/diary/empathy/`, {
+        headers: { Authorization: `Token ${token}` },
+      });
+      setEmpathy(res.data);
+    } catch (err) {
+      // 실패 시 조용히 fallback (기본 카피로 표시됨)
+      if (err.response?.status !== 401) {
+        console.warn('[diary/empathy] 조회 실패:', err.message);
+      }
+      setEmpathy(null);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchWeeklyData();
+    fetchEmpathy();
+  }, [fetchWeeklyData, fetchEmpathy]);
+
+  // ─── 로그아웃 ───
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -324,115 +496,47 @@ function Mainpage() {
   };
 
   const handleStartDiary = () => {
-    // TODO: 일기 작성 페이지/모달로 이동
+    if (todayDiary) {
+      alert('오늘은 이미 일기를 작성하셨어요. 내일 다시 만나요!');
+      return;
+    }
     navigate('/diary/write');
   };
 
-  // ─────────────────────────────────────
-  //  이번 주 마음 흐름: 캘린더 API 재사용
-  //  GET /api/diary/calendar/?year=&month=
-  //  이번 주가 두 달에 걸치면 두 달 모두 조회 후 병합
-  // ─────────────────────────────────────
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchWeeklyMood = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return; // 비로그인 시 더미/빈 상태 유지
-
-      setMoodLoading(true);
-
-      try {
-        // 이번 주에 걸친 (year, month) 조합을 중복 없이 수집
-        const monthKeys = new Map(); // 'YYYY-M' → { year, month }
-        weekDates.forEach((d) => {
-          const [y, m] = d.dateKey.split('-');
-          const key = `${parseInt(y, 10)}-${parseInt(m, 10)}`;
-          if (!monthKeys.has(key)) {
-            monthKeys.set(key, { year: parseInt(y, 10), month: parseInt(m, 10) });
-          }
-        });
-
-        // 각 달을 병렬 조회
-        const requests = Array.from(monthKeys.values()).map(({ year, month }) =>
-          axios.get(`${API_BASE}/api/diary/calendar/`, {
-            params: { year, month }, // dateKey에서 이미 1-indexed로 추출됨
-            headers: { Authorization: `Token ${token}` },
-            signal: controller.signal,
-          })
-        );
-
-        const responses = await Promise.all(requests);
-
-        // 이번 주 날짜 집합 (빠른 조회용)
-        const weekKeySet = new Set(weekDates.map((d) => d.dateKey));
-
-        // 응답들을 병합하면서 이번 주 날짜만 추출
-        const merged = {};
-        responses.forEach((res) => {
-          const { has_diaries, calendar_data } = res.data;
-          if (!has_diaries || !calendar_data) return;
-
-          Object.entries(calendar_data).forEach(([dateKey, entry]) => {
-            if (!weekKeySet.has(dateKey)) return; // 이번 주 밖 날짜는 버림
-
-            const emotionKey =
-              entry.emotion_key ||
-              KOR_TO_KEY[entry.primary_emotion] ||
-              'unknown';
-            const meta = EMOTION_META[emotionKey];
-            if (!meta) return; // unknown 등 매핑 없는 감정은 표시 안 함
-
-            merged[dateKey] = {
-              emotion_key: emotionKey,
-              emoji: meta.emoji,
-              label: meta.label,
-              color: meta.color,
-              weather: entry.weather || null,
-              preview: entry.preview || '',
-            };
-          });
-        });
-
-        setMoodData(merged);
-      } catch (err) {
-        if (axios.isCancel(err) || err.name === 'CanceledError') return;
-        console.error('이번 주 마음 흐름 로딩 실패', err);
-        // 실패 시 빈 상태로 둠 (UI는 '기록 없음'으로 표시)
-        setMoodData({});
-      } finally {
-        setMoodLoading(false);
-      }
-    };
-
-    fetchWeeklyMood();
-
-    return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 마운트 시 1회 (이번 주는 고정)
-
-  // ─────────────────────────────────────
-  //  추천 콘텐츠 / 최근 일기 (추후 연동)
-  // ─────────────────────────────────────
-  useEffect(() => {
-    // TODO: 백엔드 연동 시 아래 주석 해제
-    // fetchRecommended(); fetchDiaries();
-  }, []);
+  const handleViewToday = () => {
+    navigate(`/calendar?date=${todayKey}`);
+  };
 
   return (
     <div className={styles.mainpage}>
       <TopNav user={user} onLogout={handleLogout} onNavigate={navigate} />
 
       <main className={styles.mainContent}>
-        <HeroSection user={user} onStartDiary={handleStartDiary} />
-        <WeeklyMood weekDates={weekDates} moodData={moodData} isLoading={moodLoading} />
-        <RecommendedPreview items={recommendedItems} onNavigate={navigate} />
-        <RecentDiaries diaries={recentDiaries} onNavigate={navigate} />
+        <HeroSection
+          user={user}
+          todayDiary={todayDiary}
+          empathy={empathy}
+          onStartDiary={handleStartDiary}
+          onViewToday={handleViewToday}
+        />
+
+        <WeeklyMood
+          weekDates={weekDates}
+          weeklyData={weeklyData}
+          isLoading={isLoading}
+        />
+
+        <RecommendedPreview
+          todayDiary={todayDiary}
+          onNavigate={navigate}
+          onStartDiary={handleStartDiary}
+        />
+
+        <RecentDiaries diaries={recentDiaries} onNavigate={navigate} /> 
       </main>
 
       <footer className={styles.mainFooter}>
         <p>© 2026 Day by Day</p>
-        <p>Developed by 이현욱 정종욱 구민주 설소연</p>
       </footer>
     </div>
   );
