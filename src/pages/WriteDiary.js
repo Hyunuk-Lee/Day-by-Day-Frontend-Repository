@@ -320,10 +320,10 @@ function BookCard({ data }) {
   );
 }
 
-function ResultStep({ recommendations, error, onGoHome, onGoRecommended, onRetry }) {
-  const movie = recommendations?.movie;
-  const music = recommendations?.music;
-  const book = recommendations?.book;
+function ResultStep({ recommendations, empathyMessage, error, onGoHome, onGoRecommended, onRetry }) {
+  const movies = recommendations?.movies || [];
+  const musics = recommendations?.musics || [];
+  const books = recommendations?.books || [];
 
   if (error) {
     return (
@@ -346,11 +346,19 @@ function ResultStep({ recommendations, error, onGoHome, onGoRecommended, onRetry
         <h2 className={styles.resultTitle}>오늘의 당신에게 어울리는 문화 콘텐츠</h2>
         <p className={styles.resultSubtitle}>Day by Day 자체 AI가 일기 내용을 바탕으로 선별했어요</p>
       </div>
+
+      {empathyMessage && (
+        <div className={styles.empathyBanner}>
+          <p className={styles.empathyBannerText}>{empathyMessage}</p>
+        </div>
+      )}
+
       <div className={styles.resultCards}>
-        <MovieCard data={movie} />
-        <MusicCard data={music} />
-        <BookCard data={book} />
+        {movies.map((m, i) => <MovieCard key={`movie-${i}`} data={m} />)}
+        {musics.map((m, i) => <MusicCard key={`music-${i}`} data={m} />)}
+        {books.map((b, i) => <BookCard key={`book-${i}`} data={b} />)}
       </div>
+
       <div className={styles.resultActions}>
         <button className={styles.resultPrimaryBtn} onClick={onGoRecommended}>🎁 추천 보관함에서 더 보기</button>
         <button className={styles.resultSecondaryBtn} onClick={onGoHome}>🏠 홈으로 돌아가기</button>
@@ -374,6 +382,7 @@ function WriteDiary() {
 
   const [diaryId, setDiaryId] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
+  const [empathyMessage, setEmpathyMessage] = useState('');
   const [isResultReady, setIsResultReady] = useState(false);
   const [error, setError] = useState(null);
 
@@ -389,9 +398,10 @@ function WriteDiary() {
       if (diary.weather) formData.append('weather', WEATHER_MAP[diary.weather]);
       if (diary.image) formData.append('image', diary.image);
 
-      const res = await api.post('/api/diary/create/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // FormData를 보낼 때는 Content-Type을 직접 지정하지 않는다.
+      // axios가 multipart/form-data와 boundary를 자동으로 채워준다.
+      // (직접 'multipart/form-data'만 넣으면 boundary가 빠져 서버 파싱이 실패할 수 있음)
+      const res = await api.post('/api/diary/create/', formData);
 
       setDiaryId(res.data.id);
       console.log('[diary/create] 응답:', res.data);
@@ -412,6 +422,20 @@ function WriteDiary() {
       const analyzeRes = await api.post('/api/diary/send/', { diary_id: diaryId });
       console.log('[diary/send] 응답:', analyzeRes.data);
 
+      // ─── 공감 멘트 확보 ───
+      // 1순위: 분석(send) 응답에 empathy_message가 포함되어 있으면 그대로 사용
+      // 2순위: 없으면 메인페이지와 동일한 /api/diary/empathy/ 엔드포인트로 보강
+      let message = analyzeRes.data?.empathy_message || '';
+      if (!message) {
+        try {
+          const empathyRes = await api.get('/api/diary/empathy/');
+          message = empathyRes.data?.empathy_message || '';
+        } catch (e) {
+          console.warn('[diary/empathy] 보강 조회 실패:', e.message);
+        }
+      }
+      setEmpathyMessage(message);
+
       const payload = { mode, count: 3 };
 
       const [movieRes, musicRes, bookRes] = await Promise.all([
@@ -425,9 +449,9 @@ function WriteDiary() {
       console.log('[books]', bookRes.data);
 
       setRecommendations({
-        movie: movieRes.data.recommendations?.[0] || null,
-        music: musicRes.data.recommendations?.[0] || null,
-        book: bookRes.data.recommendations?.[0] || null,
+        movies: movieRes.data.recommendations || [],
+        musics: musicRes.data.recommendations || [],
+        books: bookRes.data.recommendations || [],
       });
       setIsResultReady(true);
     } catch (err) {
@@ -464,6 +488,7 @@ function WriteDiary() {
       {step === 'result' && (
         <ResultStep
           recommendations={recommendations}
+          empathyMessage={empathyMessage}
           error={error}
           onGoHome={handleGoHome}
           onGoRecommended={handleGoRecommended}

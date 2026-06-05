@@ -716,3 +716,24 @@
   color: var(--color-primary);
   border-color: var(--color-accent);
 }
+
+.empathyBanner {
+  margin: 0 auto 24px;
+  max-width: 640px;
+  padding: 20px 24px;
+  border-radius: 16px;
+  background: rgba(30, 64, 175, 0.08);
+  border: 1px solid rgba(30, 64, 175, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.empathyBannerText {
+  margin: 0;
+  font-family: 'Noto Serif KR', serif;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #1E3A5F;
+  text-align: center;
+  white-space: pre-line;
+}
