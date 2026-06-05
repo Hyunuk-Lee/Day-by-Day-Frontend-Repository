@@ -93,6 +93,16 @@ function parseMovieTags(tags) {
   return tags;
 }
 
+// ─── 유틸: 공감 멘트에서 마지막 문장(추천 안내) 제거 ───
+function stripRecommendationSentence(message) {
+  if (!message) return message;
+  const lastDot = message.lastIndexOf('.');
+  if (lastDot === -1) return message;                 // 마침표가 없으면 그대로
+  const secondLastDot = message.lastIndexOf('.', lastDot - 1);
+  if (secondLastDot === -1) return message;           // 문장이 하나뿐이면 그대로
+  return message.slice(0, secondLastDot + 1);         // 마지막에서 두 번째 '.'까지만 남김
+}
+
 // ═══════════════════════════════════════
 //  컴포넌트: 상단 네비게이션 바
 // ═══════════════════════════════════════
@@ -144,7 +154,7 @@ function HeroSection({ user, todayDiary, empathy, onStartDiary, onViewToday }) {
               {getEmotionMeta(empathy.primary_emotion).emoji}
             </div>
             <p className={styles.empathyMessage}>
-              {empathy.empathy_message}
+              {stripRecommendationSentence(empathy.empathy_message)}
             </p>
           </div>
         ) : (
