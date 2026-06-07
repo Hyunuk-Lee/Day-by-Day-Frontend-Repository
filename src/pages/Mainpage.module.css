@@ -849,3 +849,29 @@
     animation: none;
   }
 }
+
+/* 클릭 가능한 감정 이모지 — button reset + hover/active 효과 */
+.moodEmotionClickable {
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              filter 0.18s ease;
+}
+
+.moodEmotionClickable:hover {
+  transform: scale(1.12);
+  filter: brightness(1.06);
+}
+
+.moodEmotionClickable:active {
+  transform: scale(0.94);
+}
+
+.moodEmotionClickable:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}

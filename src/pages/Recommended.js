@@ -47,10 +47,10 @@ const WEATHER_LABEL = {
 };
 
 const MODE_LABEL = {
-  shift: '기분 전환',
-  match: '공감',
-  comfort: '위로',
-  energize: '활력',
+  auto: '자동',
+  maintain: '유지',
+  shift: '전환',
+  amplification: '극대화',
 };
 
 const DAY_KOR = ['일', '월', '화', '수', '목', '금', '토'];

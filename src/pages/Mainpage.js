@@ -115,7 +115,6 @@ function TopNav({ user, onLogout, onNavigate }) {
       <div className={styles.topnavRight}>
         <button className={styles.topnavLink} onClick={() => onNavigate('/calendar')}>캘린더</button>
         <button className={styles.topnavLink} onClick={() => onNavigate('/recommended')}>추천 보관함</button>
-        <button className={styles.topnavLink} onClick={() => onNavigate('/Mypage')}>마이페이지</button>
         {user ? (
           <button className={`${styles.topnavLink} ${styles.topnavLogout}`} onClick={onLogout}>로그아웃</button>
         ) : (
@@ -179,7 +178,13 @@ function HeroSection({ user, todayDiary, empathy, onStartDiary, onViewToday }) {
 // ═══════════════════════════════════════
 //  컴포넌트: 이번 주 마음 흐름
 // ═══════════════════════════════════════
-function WeeklyMood({ weekDates, weeklyData, isLoading }) {
+function WeeklyMood({ weekDates, weeklyData, isLoading, user, onNavigate }) {
+  const handleEmotionClick = (dateKey) => {
+    if (user?.username) {
+      onNavigate(`/diary/${user.username}/${dateKey}`);
+    }
+  };
+
   return (
     <section className={styles.weeklyMood}>
       <h2 className={styles.sectionTitle}>
@@ -202,14 +207,17 @@ function WeeklyMood({ weekDates, weeklyData, isLoading }) {
               <div className={styles.moodDotWrapper}>
                 {diary ? (
                   <>
-                    <div
-                      className={`${styles.moodEmotion} ${isLoading ? styles.moodLoading : ''}`}
+                    <button
+                      type="button"
+                      className={`${styles.moodEmotion} ${styles.moodEmotionClickable} ${isLoading ? styles.moodLoading : ''}`}
                       style={{ backgroundColor: getEmotionMeta(diary.emotion?.primary_emotion).color }}
+                      onClick={() => handleEmotionClick(dateKey)}
+                      aria-label={`${dateKey} 일기 보기`}
                     >
                       <span className={styles.moodEmoji}>
                         {getEmotionMeta(diary.emotion?.primary_emotion).emoji}
                       </span>
-                    </div>
+                    </button>
                     <div className={styles.tooltip}>
                       <div className={styles.tooltipHeader}>
                         {getWeatherEmoji(diary.weather)} {diary.emotion?.primary_emotion || ''}
@@ -339,7 +347,7 @@ function RecommendedPreview({ todayDiary, onNavigate, onStartDiary }) {
 // ═══════════════════════════════════════
 //  컴포넌트: 최근 일기 목록
 // ═══════════════════════════════════════
-function RecentDiaries({ diaries, onNavigate }) {
+function RecentDiaries({ diaries, onNavigate, user }) {
   if (!diaries || diaries.length === 0) {
     return (
       <section className={styles.sectionCard}>
@@ -352,6 +360,16 @@ function RecentDiaries({ diaries, onNavigate }) {
       </section>
     );
   }
+
+  const handleCardClick = (diary) => {
+    if (!user?.username || !diary?.created_at) {
+      // 사용자/날짜 정보가 없으면 안전하게 캘린더로
+      onNavigate('/calendar');
+      return;
+    }
+    const dateKey = formatDateForAPI(new Date(diary.created_at));
+    onNavigate(`/diary/${user.username}/${dateKey}`);
+  };
 
   return (
     <section className={styles.sectionCard}>
@@ -366,7 +384,7 @@ function RecentDiaries({ diaries, onNavigate }) {
           <div
             key={diary.id}
             className={styles.diaryCard}
-            onClick={() => onNavigate('/calendar')}
+            onClick={() => handleCardClick(diary)}
           >
             <div className={styles.diaryMeta}>
               <span className={styles.diaryDate}>{formatShortDate(diary.created_at)}</span>
@@ -503,6 +521,8 @@ function Mainpage() {
           weekDates={weekDates}
           weeklyData={weeklyData}
           isLoading={isLoading}
+          user={user}
+          onNavigate={navigate}
         />
 
         <RecommendedPreview
@@ -511,7 +531,7 @@ function Mainpage() {
           onStartDiary={handleStartDiary}
         />
 
-        <RecentDiaries diaries={recentDiaries} onNavigate={navigate} />
+        <RecentDiaries diaries={recentDiaries} onNavigate={navigate} user={user} />
       </main>
 
       <footer className={styles.mainFooter}>

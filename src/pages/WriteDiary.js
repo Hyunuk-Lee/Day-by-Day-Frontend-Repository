@@ -20,6 +20,11 @@ const WEATHER_MAP = {
 
 const MODE_OPTIONS = [
   {
+    value: 'auto', label: '자동', emoji: '✨',
+    title: '자동으로 추천 방향 선택하기',
+    description: '오늘의 감정 분석을 바탕으로 가장 알맞은 추천 방향을 자동으로 골라드려요.',
+  },
+  {
     value: 'maintain', label: '유지', emoji: '🌿',
     title: '지금의 감정 유지하기',
     description: '현재 감정 상태를 차분하게 유지할 수 있는 콘텐츠를 추천해요.',
@@ -304,7 +309,7 @@ function BookCard({ data }) {
       className={`${styles.resultCard} ${styles.resultCardBook}`}
     >
       <div className={styles.resultCardThumb}>
-        <span className={styles.resultCardThumbEmoji}>📖</span>
+        {data.cover_url ? <img src={data.cover_url} alt={data.title} /> : <span className={styles.resultCardThumbEmoji}>📖</span>}
       </div>
       <div className={styles.resultCardBody}>
         <span className={styles.resultCardCategory}>📖 책 · {data.category}</span>
@@ -378,7 +383,7 @@ function WriteDiary() {
   const [diary, setDiary] = useState({
     content: '', weather: '', image: null, imagePreview: null,
   });
-  const [mode, setMode] = useState('maintain');
+  const [mode, setMode] = useState('auto');
 
   const [diaryId, setDiaryId] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
