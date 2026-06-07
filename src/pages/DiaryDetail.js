@@ -377,12 +377,7 @@ function RecommendationsSection({ recommendations }) {
     <section className={styles.recCard}>
       <header className={styles.cardHeader}>
         <h2 className={styles.cardTitle}>오늘의 추천</h2>
-        {modeLabel && (
-          <span className={styles.modeBadge}>
-            <span className={styles.modeDot} />
-            {modeLabel}
-          </span>
-        )}
+
       </header>
 
       {sections.map(({ icon, title, items, Card, idKey }) =>

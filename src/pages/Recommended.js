@@ -427,12 +427,6 @@ function DayCard({ dateKey, diary, isToday, todayKey, yesterdayKey, feedbacks, o
 
       {hasAnyRec ? (
         <div className={styles.recommendations}>
-          {modeLabel && (
-            <div className={styles.modeBadge}>
-              <span className={styles.modeDot} />
-              {modeLabel} 추천
-            </div>
-          )}
 
           <CategorySection
             icon="📖"
