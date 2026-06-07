@@ -568,15 +568,15 @@
 }
 
 /* ───── 아이템 카드 (책/음악/영화 공통) ───── */
+/* 아이템 카드: 외곽 컨테이너 (div). 내부에 링크 영역(.itemMain)과 피드백 버튼(.feedbackCol) */
 .itemCard {
   display: flex;
-  gap: 14px;
+  align-items: stretch;
+  gap: 6px;
   padding: 12px;
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid var(--color-surface-border);
   border-radius: var(--radius-md);
-  text-decoration: none;
-  color: inherit;
   transition: all var(--transition-base);
 }
 
@@ -585,6 +585,16 @@
   box-shadow: var(--shadow-md);
   transform: translateX(4px);
   border-color: rgba(125, 211, 252, 0.3);
+}
+
+/* 카드 내 클릭 가능한 메인 영역 (썸네일 + 본문) */
+.itemMain {
+  flex: 1;
+  display: flex;
+  gap: 14px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
 }
 
 .itemThumb {
@@ -718,6 +728,119 @@
 }
 
 /* ========================================================
+ * 좋아요 / 싫어요 피드백 버튼
+ * ======================================================== */
+.feedbackCol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding-left: 2px;
+}
+
+.feedbackBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--color-surface-border);
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--transition-base);
+}
+
+.feedbackBtn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--color-text-primary);
+  transform: scale(1.08);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.feedbackBtn:active {
+  transform: scale(0.95);
+}
+
+/* 좋아요 활성 — 세이지 그린 톤 */
+.feedbackBtnLike {
+  background: rgba(155, 196, 165, 0.25);
+  border-color: rgba(155, 196, 165, 0.55);
+  color: #5C9171;
+  box-shadow:
+    0 2px 6px rgba(155, 196, 165, 0.25),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.feedbackBtnLike:hover {
+  background: rgba(155, 196, 165, 0.35);
+  color: #4A7E5F;
+  transform: scale(1.08);
+}
+
+/* 싫어요 활성 — 코랄 톤 */
+.feedbackBtnDislike {
+  background: rgba(232, 144, 144, 0.2);
+  border-color: rgba(232, 144, 144, 0.5);
+  color: #B85555;
+  box-shadow:
+    0 2px 6px rgba(232, 144, 144, 0.2),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.feedbackBtnDislike:hover {
+  background: rgba(232, 144, 144, 0.3);
+  color: #9F4444;
+  transform: scale(1.08);
+}
+
+/* ========================================================
+ * 피드백 실패 토스트
+ * ======================================================== */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border-radius: 999px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+  animation: toastSlide 0.3s var(--transition-spring);
+  max-width: 90vw;
+}
+
+.toastIcon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ========================================================
  * 반응형
  * ======================================================== */
 @media (max-width: 600px) {
@@ -788,6 +911,26 @@
     padding: 5px 10px;
     font-size: 11.5px;
   }
+
+  .feedbackBtn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .feedbackBtn svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .feedbackCol {
+    gap: 3px;
+  }
+
+  .toast {
+    bottom: 20px;
+    font-size: 12.5px;
+    padding: 10px 16px;
+  }
 }
 
 @media (max-width: 400px) {
@@ -806,7 +949,9 @@
   .main,
   .itemList,
   .spinner,
-  .dayCardToday::after {
+  .dayCardToday::after,
+  .toast,
+  .feedbackBtn {
     animation: none;
     transition: none;
   }
@@ -816,6 +961,11 @@
   }
 
   .itemCard:hover .itemThumb img {
+    transform: none;
+  }
+
+  .feedbackBtn:hover,
+  .feedbackBtn:active {
     transform: none;
   }
 

@@ -117,6 +117,77 @@ function ChevronIcon() {
 }
 
 /* ====================================================
+ * 좋아요/싫어요 아이콘
+ * ==================================================== */
+function ThumbUpIcon({ filled }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 10v12" />
+      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L14 3a1.45 1.45 0 0 1 1 1.5z" />
+    </svg>
+  );
+}
+
+function ThumbDownIcon({ filled }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 14V2" />
+      <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L10 21a1.45 1.45 0 0 1-1-1.5z" />
+    </svg>
+  );
+}
+
+/* ====================================================
+ * 좋아요/싫어요 버튼 그룹
+ * - 같은 버튼을 다시 누르면 NONE으로 해제 (토글)
+ * - 반대 버튼을 누르면 그쪽으로 전환
+ * ==================================================== */
+function FeedbackButtons({ contentType, itemId, feedback, onFeedback }) {
+  if (itemId === undefined || itemId === null) return null;
+
+  const handleClick = (e, type) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const next = feedback === type ? 'NONE' : type;
+    onFeedback(contentType, itemId, next);
+  };
+
+  const isLike = feedback === 'LIKE';
+  const isDislike = feedback === 'DISLIKE';
+
+  return (
+    <div className={styles.feedbackCol}>
+      <button
+        type="button"
+        className={`${styles.feedbackBtn} ${isLike ? styles.feedbackBtnLike : ''}`}
+        onClick={(e) => handleClick(e, 'LIKE')}
+        aria-label={isLike ? '좋아요 취소' : '좋아요'}
+        aria-pressed={isLike}
+        title={isLike ? '좋아요 취소' : '좋아요'}
+      >
+        <ThumbUpIcon filled={isLike} />
+      </button>
+      <button
+        type="button"
+        className={`${styles.feedbackBtn} ${isDislike ? styles.feedbackBtnDislike : ''}`}
+        onClick={(e) => handleClick(e, 'DISLIKE')}
+        aria-label={isDislike ? '싫어요 취소' : '싫어요'}
+        aria-pressed={isDislike}
+        title={isDislike ? '싫어요 취소' : '싫어요'}
+      >
+        <ThumbDownIcon filled={isDislike} />
+      </button>
+    </div>
+  );
+}
+
+/* ====================================================
  * 카테고리 섹션 (책 / 음악 / 영화)
  * - 처음에는 1개만 보이고, 토글로 나머지 2개 펼침
  * ==================================================== */
@@ -157,105 +228,129 @@ function CategorySection({ icon, title, items, renderItem }) {
 /* ====================================================
  * 아이템 카드: 책 / 음악 / 영화
  * ==================================================== */
-function BookCard({ book }) {
+function BookCard({ book, feedback, onFeedback }) {
   return (
-    <a
-      href={decodeAmp(book.link)}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={styles.itemCard}
-    >
-      <div className={styles.itemThumb}>
-        {book.cover_url ? (
-          <img src={book.cover_url} alt={book.title} loading="lazy" />
-        ) : (
-          <span className={styles.itemPlaceholder}>📖</span>
-        )}
-      </div>
-      <div className={styles.itemBody}>
-        <h4 className={styles.itemTitle}>{book.title}</h4>
-        <p className={styles.itemMeta}>{book.author}</p>
-        {book.description && (
-          <p className={styles.itemDesc}>{book.description}</p>
-        )}
-        {book.category && (
-          <div className={styles.tagRow}>
-            <span className={styles.tag}>{book.category}</span>
-          </div>
-        )}
-      </div>
-    </a>
+    <div className={styles.itemCard}>
+      <a
+        href={decodeAmp(book.link)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.itemMain}
+      >
+        <div className={styles.itemThumb}>
+          {book.cover_url ? (
+            <img src={book.cover_url} alt={book.title} loading="lazy" />
+          ) : (
+            <span className={styles.itemPlaceholder}>📖</span>
+          )}
+        </div>
+        <div className={styles.itemBody}>
+          <h4 className={styles.itemTitle}>{book.title}</h4>
+          <p className={styles.itemMeta}>{book.author}</p>
+          {book.description && (
+            <p className={styles.itemDesc}>{book.description}</p>
+          )}
+          {book.category && (
+            <div className={styles.tagRow}>
+              <span className={styles.tag}>{book.category}</span>
+            </div>
+          )}
+        </div>
+      </a>
+      <FeedbackButtons
+        contentType="book"
+        itemId={book.isbn}
+        feedback={feedback}
+        onFeedback={onFeedback}
+      />
+    </div>
   );
 }
 
-function MusicCard({ music }) {
+function MusicCard({ music, feedback, onFeedback }) {
   const tags = Array.isArray(music.tags) ? music.tags.slice(0, 3) : [];
   return (
-    <a
-      href={music.link_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={styles.itemCard}
-    >
-      <div className={`${styles.itemThumb} ${styles.itemThumbSquare}`}>
-        {music.image_url ? (
-          <img src={music.image_url} alt={music.title} loading="lazy" />
-        ) : (
-          <span className={styles.itemPlaceholder}>🎵</span>
-        )}
-      </div>
-      <div className={styles.itemBody}>
-        <h4 className={styles.itemTitle}>{music.title}</h4>
-        <p className={styles.itemMeta}>{music.artist}</p>
-        {tags.length > 0 && (
-          <div className={styles.tagRow}>
-            {tags.map((tag, i) => (
-              <span key={i} className={styles.tag}>{tag}</span>
-            ))}
-          </div>
-        )}
-      </div>
-    </a>
+    <div className={styles.itemCard}>
+      <a
+        href={music.link_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.itemMain}
+      >
+        <div className={`${styles.itemThumb} ${styles.itemThumbSquare}`}>
+          {music.image_url ? (
+            <img src={music.image_url} alt={music.title} loading="lazy" />
+          ) : (
+            <span className={styles.itemPlaceholder}>🎵</span>
+          )}
+        </div>
+        <div className={styles.itemBody}>
+          <h4 className={styles.itemTitle}>{music.title}</h4>
+          <p className={styles.itemMeta}>{music.artist}</p>
+          {tags.length > 0 && (
+            <div className={styles.tagRow}>
+              {tags.map((tag, i) => (
+                <span key={i} className={styles.tag}>{tag}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </a>
+      <FeedbackButtons
+        contentType="music"
+        itemId={music.track_id}
+        feedback={feedback}
+        onFeedback={onFeedback}
+      />
+    </div>
   );
 }
 
-function MovieCard({ movie }) {
+function MovieCard({ movie, feedback, onFeedback }) {
   const genres = parseMovieTags(movie.tags);
   return (
-    <a
-      href={movie.link_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={styles.itemCard}
-    >
-      <div className={styles.itemThumb}>
-        {movie.image_url ? (
-          <img src={movie.image_url} alt={movie.title} loading="lazy" />
-        ) : (
-          <span className={styles.itemPlaceholder}>🎬</span>
-        )}
-      </div>
-      <div className={styles.itemBody}>
-        <h4 className={styles.itemTitle}>{movie.title}</h4>
-        {movie.director && (
-          <p className={styles.itemMeta}>감독 · {movie.director}</p>
-        )}
-        {genres.length > 0 && (
-          <div className={styles.tagRow}>
-            {genres.map((g, i) => (
-              <span key={i} className={styles.tag}>{g}</span>
-            ))}
-          </div>
-        )}
-      </div>
-    </a>
+    <div className={styles.itemCard}>
+      <a
+        href={movie.link_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.itemMain}
+      >
+        <div className={styles.itemThumb}>
+          {movie.image_url ? (
+            <img src={movie.image_url} alt={movie.title} loading="lazy" />
+          ) : (
+            <span className={styles.itemPlaceholder}>🎬</span>
+          )}
+        </div>
+        <div className={styles.itemBody}>
+          <h4 className={styles.itemTitle}>{movie.title}</h4>
+          {movie.director && (
+            <p className={styles.itemMeta}>감독 · {movie.director}</p>
+          )}
+          {genres.length > 0 && (
+            <div className={styles.tagRow}>
+              {genres.map((g, i) => (
+                <span key={i} className={styles.tag}>{g}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </a>
+      <FeedbackButtons
+        contentType="movie"
+        itemId={movie.movie_id}
+        feedback={feedback}
+        onFeedback={onFeedback}
+      />
+    </div>
   );
 }
 
 /* ====================================================
  * 날짜 카드 (한 날짜의 일기 + 추천 콘텐츠)
  * ==================================================== */
-function DayCard({ dateKey, diary, isToday, todayKey, yesterdayKey }) {
+function DayCard({ dateKey, diary, isToday, todayKey, yesterdayKey, feedbacks, onFeedback }) {
   const dayLabel = formatDayLabel(dateKey, todayKey, yesterdayKey);
   const subDate = formatSubDate(dateKey);
 
@@ -344,7 +439,12 @@ function DayCard({ dateKey, diary, isToday, todayKey, yesterdayKey }) {
             title="책"
             items={rec.books}
             renderItem={(book, i) => (
-              <BookCard key={book.isbn || `book-${i}`} book={book} />
+              <BookCard
+                key={book.isbn || `book-${i}`}
+                book={book}
+                feedback={feedbacks[`book:${book.isbn}`]}
+                onFeedback={onFeedback}
+              />
             )}
           />
           <CategorySection
@@ -352,7 +452,12 @@ function DayCard({ dateKey, diary, isToday, todayKey, yesterdayKey }) {
             title="음악"
             items={rec.musics}
             renderItem={(music, i) => (
-              <MusicCard key={music.track_id || `music-${i}`} music={music} />
+              <MusicCard
+                key={music.track_id || `music-${i}`}
+                music={music}
+                feedback={feedbacks[`music:${music.track_id}`]}
+                onFeedback={onFeedback}
+              />
             )}
           />
           <CategorySection
@@ -360,7 +465,12 @@ function DayCard({ dateKey, diary, isToday, todayKey, yesterdayKey }) {
             title="영화"
             items={rec.movies}
             renderItem={(movie, i) => (
-              <MovieCard key={movie.movie_id || `movie-${i}`} movie={movie} />
+              <MovieCard
+                key={movie.movie_id || `movie-${i}`}
+                movie={movie}
+                feedback={feedbacks[`movie:${movie.movie_id}`]}
+                onFeedback={onFeedback}
+              />
             )}
           />
         </div>
@@ -381,6 +491,63 @@ function Recommended() {
   const [diaryEntries, setDiaryEntries] = useState([]); // [{ dateKey, diary | null }]
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // 피드백 상태: { "book:9788...": "LIKE", "music:252": "DISLIKE", ... }
+  // 값은 'LIKE' | 'DISLIKE' | undefined(미평가)
+  const [feedbacks, setFeedbacks] = useState({});
+  // 피드백 전송 실패 시 짧게 노출되는 토스트
+  const [feedbackToast, setFeedbackToast] = useState(null);
+
+  /* ─── 피드백 전송 (낙관적 업데이트 + 실패 시 롤백) ─── */
+  const handleFeedback = async (contentType, itemId, feedbackType) => {
+    const key = `${contentType}:${itemId}`;
+    const previous = feedbacks[key];
+
+    // 낙관적 업데이트: NONE이면 키 제거, 아니면 새 값으로
+    setFeedbacks((prev) => {
+      const next = { ...prev };
+      if (feedbackType === 'NONE') {
+        delete next[key];
+      } else {
+        next[key] = feedbackType;
+      }
+      return next;
+    });
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API_BASE}/api/diary/feedback/`,
+        {
+          content_type: contentType,
+          item_id: String(itemId),
+          feedback_type: feedbackType,
+        },
+        { headers: { Authorization: `Token ${token}` } }
+      );
+    } catch (err) {
+      // 롤백
+      setFeedbacks((prev) => {
+        const next = { ...prev };
+        if (previous === undefined) {
+          delete next[key];
+        } else {
+          next[key] = previous;
+        }
+        return next;
+      });
+
+      const status = err.response?.status;
+      let msg = '피드백 전송에 실패했어요.';
+      if (status === 404) msg = '콘텐츠를 찾을 수 없어요.';
+      else if (status === 401) msg = '로그인이 만료되었어요.';
+      else if (status === 400) msg = '잘못된 요청이에요.';
+      console.error('피드백 전송 실패', err);
+
+      setFeedbackToast(msg);
+      setTimeout(() => setFeedbackToast(null), 2800);
+    }
+  };
 
   // 최근 7일 (오늘 → 6일 전, 최신순)
   const past7Days = useMemo(() => {
@@ -551,11 +718,21 @@ function Recommended() {
                 isToday={dateKey === todayKey}
                 todayKey={todayKey}
                 yesterdayKey={yesterdayKey}
+                feedbacks={feedbacks}
+                onFeedback={handleFeedback}
               />
             ))}
           </div>
         )}
       </main>
+
+      {/* 피드백 전송 실패 토스트 */}
+      {feedbackToast && (
+        <div className={styles.toast} role="status" aria-live="polite">
+          <span className={styles.toastIcon}>⚠️</span>
+          <span>{feedbackToast}</span>
+        </div>
+      )}
     </div>
   );
 }

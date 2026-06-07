@@ -110,7 +110,6 @@ function TopNav({ user, onLogout, onNavigate }) {
   return (
     <nav className={styles.topnav}>
       <div className={styles.topnavLeft}>
-        <button className={styles.topnavMenuBtn} aria-label="메뉴">☰</button>
         <span className={styles.topnavLogo}>Day by Day</span>
       </div>
       <div className={styles.topnavRight}>
