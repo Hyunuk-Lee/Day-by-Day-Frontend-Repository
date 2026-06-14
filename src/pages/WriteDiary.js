@@ -269,8 +269,14 @@ function AnalyzingStep({ isReady, onNext }) {
 // ═══════════════════════════════════════
 function MovieCard({ data }) {
   if (!data) return null;
+  const link = data.link_url?.replace(/&amp;/g, '&');
   return (
-    <div className={styles.resultCard}>
+    <a
+      href={link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={styles.resultCard}
+    >
       <div className={styles.resultCardThumb}>
         {data.image_url ? <img src={data.image_url} alt={data.title} /> : <span className={styles.resultCardThumbEmoji}>🎬</span>}
       </div>
@@ -286,14 +292,20 @@ function MovieCard({ data }) {
           </div>
         )}
       </div>
-    </div>
+    </a>
   );
 }
 
 function MusicCard({ data }) {
   if (!data) return null;
+  const link = data.link_url?.replace(/&amp;/g, '&');
   return (
-    <div className={styles.resultCard}>
+    <a
+      href={link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={styles.resultCard}
+    >
       <div className={styles.resultCardThumb}>
         {data.image_url ? <img src={data.image_url} alt={data.title} /> : <span className={styles.resultCardThumbEmoji}>🎵</span>}
       </div>
@@ -309,7 +321,7 @@ function MusicCard({ data }) {
           </div>
         )}
       </div>
-    </div>
+    </a>
   );
 }
 
