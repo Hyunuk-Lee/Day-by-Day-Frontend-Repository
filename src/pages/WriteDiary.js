@@ -403,9 +403,6 @@ function WriteDiary() {
       if (diary.weather) formData.append('weather', WEATHER_MAP[diary.weather]);
       if (diary.image) formData.append('image', diary.image);
 
-      // FormData를 보낼 때는 Content-Type을 직접 지정하지 않는다.
-      // axios가 multipart/form-data와 boundary를 자동으로 채워준다.
-      // (직접 'multipart/form-data'만 넣으면 boundary가 빠져 서버 파싱이 실패할 수 있음)
       const res = await api.post('/api/diary/create/', formData);
 
       setDiaryId(res.data.id);
@@ -427,9 +424,6 @@ function WriteDiary() {
       const analyzeRes = await api.post('/api/diary/send/', { diary_id: diaryId });
       console.log('[diary/send] 응답:', analyzeRes.data);
 
-      // ─── 공감 멘트 확보 ───
-      // 1순위: 분석(send) 응답에 empathy_message가 포함되어 있으면 그대로 사용
-      // 2순위: 없으면 메인페이지와 동일한 /api/diary/empathy/ 엔드포인트로 보강
       let message = analyzeRes.data?.empathy_message || '';
       if (!message) {
         try {
@@ -443,15 +437,18 @@ function WriteDiary() {
 
       const payload = { mode, count: 3 };
 
-      const [movieRes, musicRes, bookRes] = await Promise.all([
-        api.post(`/api/recommend/movie/${diaryId}/`, payload),
-        api.post(`/api/recommend/music/${diaryId}/`, payload),
-        api.post(`/api/recommend/books/${diaryId}/`, payload),
-      ]);
-
+      // ==========================================
+      // [수정된 부분] Promise.all을 제거하고 하나씩 순차적으로 기다림 (SQLite 데드락 방지)
+      // ==========================================
+      const movieRes = await api.post(`/api/recommend/movie/${diaryId}/`, payload);
       console.log('[movie]', movieRes.data);
+      
+      const musicRes = await api.post(`/api/recommend/music/${diaryId}/`, payload);
       console.log('[music]', musicRes.data);
+      
+      const bookRes = await api.post(`/api/recommend/books/${diaryId}/`, payload);
       console.log('[books]', bookRes.data);
+      // ==========================================
 
       setRecommendations({
         movies: movieRes.data.recommendations || [],
