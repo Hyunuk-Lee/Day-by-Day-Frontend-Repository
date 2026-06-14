@@ -4,6 +4,21 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/client';                  // ← 공유 axios 인스턴스
 import styles from './WriteDiary.module.css';
 
+// 파일 상단 import 아래, 모듈 레벨에 추가
+// 일시적 서버 오류(예: SQLite "database is locked") 대비 재시도 래퍼
+async function postWithRetry(url, payload, { retries = 2, baseDelay = 700 } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await api.post(url, payload);
+    } catch (err) {
+      const status = err.response?.status;
+      const transient = !err.response || status === 500 || status === 502 || status === 503;
+      if (!transient || attempt >= retries) throw err;
+      await new Promise((r) => setTimeout(r, baseDelay * (attempt + 1))); // 0.7s → 1.4s
+    }
+  }
+}
+
 const WEATHER_OPTIONS = [
   { value: 'sunny', emoji: '☀️', label: '맑음' },
   { value: 'cloudy', emoji: '⛅', label: '흐림' },
@@ -418,18 +433,18 @@ function WriteDiary() {
   };
 
   // ─── Step 2 → Step 3 → Step 4: 감정 분석 + 추천 ───
+// 기존 handleTransitionEnd 전체를 아래로 교체
   const handleTransitionEnd = async () => {
+    if (isProcessingRef.current) return;        // 중복 파이프라인 실행 방지
+    isProcessingRef.current = true;
+  
     setStep('analyzing');
     setIsResultReady(false);
     setError(null);
-
+  
     try {
       const analyzeRes = await api.post('/api/diary/send/', { diary_id: diaryId });
-      console.log('[diary/send] 응답:', analyzeRes.data);
-
-      // ─── 공감 멘트 확보 ───
-      // 1순위: 분석(send) 응답에 empathy_message가 포함되어 있으면 그대로 사용
-      // 2순위: 없으면 메인페이지와 동일한 /api/diary/empathy/ 엔드포인트로 보강
+    
       let message = analyzeRes.data?.empathy_message || '';
       if (!message) {
         try {
@@ -440,31 +455,26 @@ function WriteDiary() {
         }
       }
       setEmpathyMessage(message);
-
+    
       const payload = { mode, count: 3 };
-
-      const [movieRes, musicRes, bookRes] = await Promise.all([
-        api.post(`/api/recommend/movie/${diaryId}/`, payload),
-        api.post(`/api/recommend/music/${diaryId}/`, payload),
-        api.post(`/api/recommend/books/${diaryId}/`, payload),
-      ]);
-
-      console.log('[movie]', movieRes.data);
-      console.log('[music]', musicRes.data);
-      console.log('[books]', bookRes.data);
-
+    
+      // 순차 호출 + 일시적 500 자동 재시도
+      const movieRes = await postWithRetry(`/api/recommend/movie/${diaryId}/`, payload);
+      const musicRes = await postWithRetry(`/api/recommend/music/${diaryId}/`, payload);
+      const bookRes  = await postWithRetry(`/api/recommend/books/${diaryId}/`, payload);
+    
       setRecommendations({
         movies: movieRes.data.recommendations || [],
         musics: musicRes.data.recommendations || [],
-        books: bookRes.data.recommendations || [],
+        books:  bookRes.data.recommendations || [],
       });
       setIsResultReady(true);
     } catch (err) {
       console.error('감정 분석/추천 실패:', err);
-      console.error('실패한 요청 URL:', err.config?.url);
-      console.error('응답 상태:', err.response?.status, err.response?.data);
       setError(err.response?.data?.detail || `서버 응답을 받지 못했습니다. (${err.response?.status || 'NETWORK'})`);
       setIsResultReady(true);
+    } finally {
+      isProcessingRef.current = false;
     }
   };
 
