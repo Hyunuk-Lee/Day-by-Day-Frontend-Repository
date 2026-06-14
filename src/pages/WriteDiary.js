@@ -405,6 +405,7 @@ function WriteDiary() {
   const [empathyMessage, setEmpathyMessage] = useState('');
   const [isResultReady, setIsResultReady] = useState(false);
   const [error, setError] = useState(null);
+  const isProcessingRef = useRef(false);
 
   useEffect(() => {
     if (!user) navigate('/login');
@@ -437,14 +438,14 @@ function WriteDiary() {
   const handleTransitionEnd = async () => {
     if (isProcessingRef.current) return;        // 중복 파이프라인 실행 방지
     isProcessingRef.current = true;
-  
+
     setStep('analyzing');
     setIsResultReady(false);
     setError(null);
-  
+
     try {
       const analyzeRes = await api.post('/api/diary/send/', { diary_id: diaryId });
-    
+
       let message = analyzeRes.data?.empathy_message || '';
       if (!message) {
         try {
@@ -455,14 +456,14 @@ function WriteDiary() {
         }
       }
       setEmpathyMessage(message);
-    
+
       const payload = { mode, count: 3 };
-    
+
       // 순차 호출 + 일시적 500 자동 재시도
       const movieRes = await postWithRetry(`/api/recommend/movie/${diaryId}/`, payload);
       const musicRes = await postWithRetry(`/api/recommend/music/${diaryId}/`, payload);
       const bookRes  = await postWithRetry(`/api/recommend/books/${diaryId}/`, payload);
-    
+
       setRecommendations({
         movies: movieRes.data.recommendations || [],
         musics: musicRes.data.recommendations || [],
