@@ -58,6 +58,18 @@ function getWeekDates() {
   });
 }
 
+// ─── 유틸: 최근 일기 조회용 날짜 (오늘 포함, 7일 전까지 → 총 8일) ───
+// 주(week)와 무관하게 "오늘부터 거꾸로" 날짜를 만들어 최근 일기를 찾는다.
+function getRecentDates() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Array.from({ length: 8 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i); // i = 0(오늘) ~ 7(7일 전)
+    return d;
+  });
+}
+
 const EMOTION_META = {
   '기쁨': { emoji: '😊', color: '#FCD34D' },
   '슬픔': { emoji: '😢', color: '#93C5FD' },
@@ -422,20 +434,26 @@ function Mainpage() {
   const todayKey = formatDateForAPI(new Date());
   const todayDiary = weeklyData[todayKey] || null;
 
-  const recentDiaries = Object.entries(weeklyData)
-    .filter(([key]) => key !== todayKey)
-    .map(([, data]) => data)
+  // 주(week)와 무관하게 오늘 포함 최근 8일 안의 일기 중, 최신순 3개
+  const recentDiaries = getRecentDates()
+    .map((d) => weeklyData[formatDateForAPI(d)])
+    .filter(Boolean)
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 3);
 
-  // ─── 이번 주 일기 병렬 조회 ───
+  // ─── 일기 병렬 조회 (이번 주 + 최근 8일 합집합) ───
   const fetchWeeklyData = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
 
-    const requests = weekDates.map((d) => {
-      const dateStr = formatDateForAPI(d.fullDate);
-      return api
+    // 이번 주 마음 흐름용 날짜 + 최근 일기용 날짜를 중복 없이 합친다.
+    const dateSet = new Set();
+    getWeekDates().forEach((d) => dateSet.add(formatDateForAPI(d.fullDate)));
+    getRecentDates().forEach((d) => dateSet.add(formatDateForAPI(d)));
+    const dateStrs = [...dateSet];
+
+    const requests = dateStrs.map((dateStr) =>
+      api
         .get(`/api/diary/${dateStr}/`)
         .then((res) => ({ date: dateStr, data: res.data }))
         .catch((err) => {
@@ -443,8 +461,8 @@ function Mainpage() {
             console.warn(`[diary/${dateStr}] 조회 실패:`, err.message);
           }
           return null;
-        });
-    });
+        })
+    );
 
     try {
       const results = await Promise.all(requests);
@@ -454,7 +472,7 @@ function Mainpage() {
       });
       setWeeklyData(data);
     } catch (err) {
-      console.error('이번 주 일기 조회 중 오류:', err);
+      console.error('일기 조회 중 오류:', err);
     } finally {
       setIsLoading(false);
     }
